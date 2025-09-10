@@ -103,37 +103,33 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
-						case NOTYPE:
-        							// Ignore spaces
+    				case NOTYPE:
+        				// Ignore spaces
+        				break;
+    				case EQ:
+    				case '+': case '-': case '*': case '/': case '(': case ')':
+        				tokens[nr_token].type = rules[i].token_type;
+        				strncpy(tokens[nr_token].str, substr_start, substr_len);
+        				tokens[nr_token].str[substr_len] = '\0';
+        				nr_token++;
+        				break;
+    				case 'D':  // decimal number
+    				case 'H':  // hex number
+        				tokens[nr_token].type = 'N';  // 统一数字类型
+        				strncpy(tokens[nr_token].str, substr_start, substr_len);
+        				tokens[nr_token].str[substr_len] = '\0';
+        				nr_token++;
+        				break;
+    				case 'R':  // register
+        				tokens[nr_token].type = 'R';
+        				strncpy(tokens[nr_token].str, substr_start, substr_len);
+        				tokens[nr_token].str[substr_len] = '\0';
+        				nr_token++;
         					break;
-    					case EQ:
-       						tokens[nr_token].type = EQ;
-        					strncpy(tokens[nr_token].str, substr_start, substr_len);
-        					tokens[nr_token].str[substr_len] = '\0';
-       						nr_token++;
-        					break;
-    					case '+': case '-': case '*': case '/': case '(': case ')':
-       						tokens[nr_token].type = rules[i].token_type;
-        					tokens[nr_token].str[0] = rules[i].token_type;
-        					tokens[nr_token].str[1] = '\0';
-        					nr_token++;
-        					break;
-    					case 'd':  // decimal number
-    					case 'x':  // hexadecimal number
-        					tokens[nr_token].type = 'D';
-        					strncpy(tokens[nr_token].str, substr_start, substr_len);
-        					tokens[nr_token].str[substr_len] = '\0';
-        					nr_token++;
-        					break;
-    					case 'r':  // register
-        					tokens[nr_token].type = 'R';
-        					strncpy(tokens[nr_token].str, substr_start, substr_len);
-        					tokens[nr_token].str[substr_len] = '\0';
-        					nr_token++;
-        					break;
-						default: 
-							panic("please implement me");
-				}
+    				default:
+        				panic("Unknown token type in make_token");
+	    }
+
 
 				break;
 			}
