@@ -7,6 +7,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+
 void cpu_exec(uint32_t);
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
@@ -44,6 +45,21 @@ static int cmd_si(char *args) {
     cpu_exec(step);  // Execute the given number of instructions
     return 0;
 }
+
+static int cmd_info(char *args) {
+    char *arg = strtok(NULL, " ");
+    int i;                          /* C89 要求在这里声明 */
+
+    if (arg && strcmp(arg, "r") == 0) {
+        for (i = 0; i < 8; i++) {
+            printf("%s 0x%08x %d\n", regsl[i], cpu.gpr[i]._32, cpu.gpr[i]._32);
+        }
+        return 0;
+    }
+    return 0;
+}
+
+
 static int cmd_help(char *args);
 
 static struct {
@@ -54,7 +70,10 @@ static struct {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
-        { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
+    { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
+	{ "info", "Display program status (usage: info r | info w)", cmd_info },
+	
+
 	/* TODO: Add more commands */
 
 };
