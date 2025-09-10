@@ -59,6 +59,41 @@ static int cmd_info(char *args) {
     return 0;
 }
 
+static int cmd_x(char *args) {
+    char *arg1 = strtok(args, " ");
+    char *arg2 = strtok(NULL, " ");
+    int len;
+    swaddr_t address;
+    int i;
+
+    if (!arg1 || !arg2) {
+        printf("Usage: x N EXPR\n");
+        return 0;
+    }
+
+    if (sscanf(arg1, "%d", &len) != 1 || len <= 0) {
+        printf("Invalid number: %s\n", arg1);
+        return 0;
+    }
+
+    bool success;
+    address = expr(arg2, &success);
+    if (!success) {
+        printf("Invalid expression: %s\n", arg2);
+        return 0;
+    }
+
+    printf("0x%08x:", address);
+    for (i = 0; i < len; i++) {
+        uint32_t val = swaddr_read(address, 4);
+        printf(" %08x", val);
+        address += 4;
+    }
+    printf("\n");
+
+    return 0;
+}
+
 
 static int cmd_help(char *args);
 
@@ -72,7 +107,7 @@ static struct {
 	{ "q", "Exit NEMU", cmd_q },
     { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
 	{ "info", "Display program status (usage: info r)", cmd_info },
-	
+	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x }
 
 	/* TODO: Add more commands */
 
