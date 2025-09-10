@@ -194,6 +194,16 @@ uint32_t expr(char *e, bool *success) {
 		*success = false;
 		return 0;
 	}
+	*success = true;
+
+    if (nr_token == 1 && tokens[0].type == 'N') {
+        if (tokens[0].str[1] == 'x' || tokens[0].str[0] == '0') {
+        
+            return strtoul(tokens[0].str, NULL, 0);
+        } else {
+            return (uint32_t)atoi(tokens[0].str);
+        }
+    }
 
 	/* TODO: Insert codes to evaluate the expression. */
 	*success = true;
