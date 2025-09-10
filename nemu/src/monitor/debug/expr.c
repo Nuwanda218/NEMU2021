@@ -6,6 +6,10 @@
 #include <sys/types.h>
 #include <regex.h>
 
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
 enum {
 	NOTYPE = 256, EQ
 
@@ -24,7 +28,13 @@ static struct rule {
 
 	{" +",	NOTYPE},				// spaces
 	{"\\+", '+'},					// plus
-	{"==", EQ}						// equal
+	{"\\-", '-'},                   // minus
+    {"==", EQ},                     // equal
+    {"0[xX][0-9a-fA-F]+", 'H'},    // hex number
+    {"[0-9]+", 'D'},                // decimal number
+    {"\\$[a-zA-Z]+", 'R'},          // registers
+    {"\\(", '('},                   // left parenthesis
+    {"\\)", ')'}                    // right parenthesis
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -56,6 +66,20 @@ typedef struct token {
 Token tokens[32];
 int nr_token;
 
+/* Check register value */
+static bool get_reg_val(const char *reg, uint32_t *val) {
+    if(strcmp(reg, "$eax")==0) *val = cpu.eax;
+    else if(strcmp(reg, "$ecx")==0) *val = cpu.ecx;
+    else if(strcmp(reg, "$edx")==0) *val = cpu.edx;
+    else if(strcmp(reg, "$ebx")==0) *val = cpu.ebx;
+    else if(strcmp(reg, "$esp")==0) *val = cpu.esp;
+    else if(strcmp(reg, "$ebp")==0) *val = cpu.ebp;
+    else if(strcmp(reg, "$esi")==0) *val = cpu.esi;
+    else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
+    else return false;
+    return true;
+}
+
 static bool make_token(char *e) {
 	int position = 0;
 	int i;
@@ -79,7 +103,36 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
-					default: panic("please implement me");
+						case NOTYPE:
+        							// Ignore spaces
+        					break;
+    					case EQ:
+       						tokens[nr_token].type = EQ;
+        					strncpy(tokens[nr_token].str, substr_start, substr_len);
+        					tokens[nr_token].str[substr_len] = '\0';
+       						nr_token++;
+        					break;
+    					case '+': case '-': case '*': case '/': case '(': case ')':
+       						tokens[nr_token].type = rules[i].token_type;
+        					tokens[nr_token].str[0] = rules[i].token_type;
+        					tokens[nr_token].str[1] = '\0';
+        					nr_token++;
+        					break;
+    					case 'd':  // decimal number
+    					case 'x':  // hexadecimal number
+        					tokens[nr_token].type = 'D';
+        					strncpy(tokens[nr_token].str, substr_start, substr_len);
+        					tokens[nr_token].str[substr_len] = '\0';
+        					nr_token++;
+        					break;
+    					case 'r':  // register
+        					tokens[nr_token].type = 'R';
+        					strncpy(tokens[nr_token].str, substr_start, substr_len);
+        					tokens[nr_token].str[substr_len] = '\0';
+        					nr_token++;
+        					break;
+						default: 
+							panic("please implement me");
 				}
 
 				break;
@@ -95,6 +148,51 @@ static bool make_token(char *e) {
 	return true; 
 }
 
+/* Recursive evaluation */
+static uint32_t eval(int p, int q, bool *success) {
+	if (p > q) { *success = false; return 0; }
+	else if (p == q) {
+		if (tokens[p].type == 'D') {
+			uint32_t val;
+			if (tokens[p].str[0]=='0' && (tokens[p].str[1]=='x' || tokens[p].str[1]=='X'))
+				sscanf(tokens[p].str, "%x", &val);
+			else
+				sscanf(tokens[p].str, "%u", &val);
+			return val;
+		} else if (tokens[p].type == 'R') {
+			uint32_t val;
+			if (!get_reg_val(tokens[p].str, &val)) { *success = false; return 0; }
+			return val;
+		} else { *success = false; return 0; }
+	} else if (tokens[p].type == '(' && tokens[q].type == ')') {
+		return eval(p+1, q-1, success);
+	} else {
+		// find main operator
+		int op = -1;
+		int level = 0;
+		int i;
+		for (i = p; i <= q; i++) {
+			if (tokens[i].type == '(') level++;
+			else if (tokens[i].type == ')') level--;
+			else if (level == 0) {
+				if (tokens[i].type == '+' || tokens[i].type == '-') op = i;
+			}
+		}
+		if (op == -1) { *success = false; return 0; }
+		uint32_t val1 = eval(p, op-1, success);
+		if (!*success) return 0;
+		uint32_t val2 = eval(op+1, q, success);
+		if (!*success) return 0;
+		switch(tokens[op].type) {
+			case '+': return val1 + val2;
+			case '-': return val1 - val2;
+			default: *success = false; return 0;
+		}
+	}
+}
+
+
+
 uint32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
 		*success = false;
@@ -102,7 +200,7 @@ uint32_t expr(char *e, bool *success) {
 	}
 
 	/* TODO: Insert codes to evaluate the expression. */
-	panic("please implement me");
-	return 0;
+	*success = true;
+	return eval(0, nr_token-1, success);
 }
 
