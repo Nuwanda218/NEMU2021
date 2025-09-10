@@ -71,7 +71,7 @@ static struct {
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
     { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
-	{ "info r", "Display program status", cmd_info },
+	{ "info", "Display program status (usage: info r)", cmd_info },
 	
 
 	/* TODO: Add more commands */
