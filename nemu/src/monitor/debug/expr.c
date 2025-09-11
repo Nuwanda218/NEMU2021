@@ -32,8 +32,10 @@ static struct rule {
 	{" +",	NOTYPE},				// spaces
 	{"\\+", '+'},					// plus
 	{"\\-", '-'},                   // minus
+	{"\\*", '*'},                   // multiply
+    {"\\/", '/'},                   // divide
     {"==", EQ},                     // equal
-    {"0[xX][0-9a-fA-F]+", 'H'},    // hex number
+    {"0[xX][0-9a-fA-F]+", 'H'},     // hex number
     {"[0-9]+", 'D'},                // decimal number
     {"\\$[a-zA-Z]+", 'R'},          // registers
     {"\\(", '('},                   // left parenthesis

@@ -2,7 +2,7 @@ void init_monitor(int, char *[]);
 void reg_test();
 void restart();
 void ui_mainloop();
-void test_expr(void);
+void test_expr();
 
 int main(int argc, char *argv[]) {
 
