@@ -13,7 +13,7 @@
 enum {
 	NOTYPE = 256, 
 	EQ, // "==" (provided in the framework, can ignore for now)
-    NUM,   // number (decimal or hex)
+    NUM = 258,   // number (decimal or hex)
     REG    // register
 
 	/* TODO: Add more token types */
@@ -171,15 +171,11 @@ static int32_t eval(int p, int q, bool *success) {
 	// Single token
     if (p == q) {
         if (tokens[p].type == NUM) {
-            int32_t val;
-			// handle decimal and hexadecimal
-			if (tokens[p].str[0]=='0' && (tokens[p].str[1]=='x' || tokens[p].str[1]=='X'))
-				sscanf(tokens[p].str, "%x", &val);
-			else
-				sscanf(tokens[p].str, "%u", &val);
-			return val;
-		}
-	}  // If the range is wrapped by a complete pair of parentheses
+            int32_t val = (int32_t)strtol(tokens[p].str, NULL, 0);
+            return val;
+        } else { *success = false; return 0; }
+    }
+	  // If the range is wrapped by a complete pair of parentheses
     if (check_parentheses(p, q)) {
         return eval(p+1, q-1, success);
     }
@@ -197,31 +193,26 @@ static int32_t eval(int p, int q, bool *success) {
 		// First pass: look for '+' or '-' at the outermost level
 		int i;
 		for (i = p; i <= q; i++) {
-			if (tokens[i].type == '(') level++;
-			else if (tokens[i].type == ')') level--;
-			else if (level == 0) {
-				if (tokens[i].type == '+' || tokens[i].type == '-') {
-					op = i;
-					break;
-				}
-	
-            }
-		}
+			 if (tokens[i].type == ')') level++;
+        else if (tokens[i].type == '(') level--;
+        else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) {
+            op = i; 
+			break;
+        }
+    }
 
 		// If no '+' or '-', look for '*' or '/'
 		  if (op == -1) {
             level = 0;
             for (i = q; i >= p; i--) {
                 if (tokens[i].type == ')') level++;
-                else if (tokens[i].type == '(') level--;
-                else if (level == 0) {
-                    if (tokens[i].type == '*' || tokens[i].type == '/') {
-                        op = i;
-                        break;
-                    }
-                }
+            else if (tokens[i].type == '(') level--;
+            else if (level == 0 && (tokens[i].type == '*' || tokens[i].type == '/')) {
+                op = i; 
+				break;
             }
         }
+    }
 
 		if (op == -1) { *success = false; return 0; }
 		int32_t val1 = eval(p, op-1, success);
