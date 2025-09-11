@@ -86,7 +86,7 @@ static int cmd_x(char *args) {
     printf("0x%08x:", address);
     for (i = 0; i < len; i++) {
         uint32_t val = swaddr_read(address, 4);
-        printf(" %08x", val);
+        printf(" 0x%08x", val);
         address += 4;
     }
     printf("\n");
