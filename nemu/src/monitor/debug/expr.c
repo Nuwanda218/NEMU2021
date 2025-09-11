@@ -11,7 +11,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 enum {
-	NOTYPE = 256, EQ
+	NOTYPE = 256, 
+	EQ, // "==" (provided in the framework, can ignore for now)
+    NUM,   // number (decimal or hex)
+    REG    // register
 
 	/* TODO: Add more token types */
 
@@ -115,13 +118,13 @@ static bool make_token(char *e) {
         				break;
     				case 'D':  // decimal number
     				case 'H':  // hex number
-        				tokens[nr_token].type = 'N';  // 统一数字类型
+        				tokens[nr_token].type = NUM;  
         				strncpy(tokens[nr_token].str, substr_start, substr_len);
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
         				break;
     				case 'R':  // register
-        				tokens[nr_token].type = 'R';
+        				tokens[nr_token].type = REG;
         				strncpy(tokens[nr_token].str, substr_start, substr_len);
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
@@ -148,14 +151,15 @@ static bool make_token(char *e) {
 static uint32_t eval(int p, int q, bool *success) {
 	if (p > q) { *success = false; return 0; }
 	else if (p == q) {
-		if (tokens[p].type == 'D') {
+		if (tokens[p].type == NUM) {
 			uint32_t val;
+			// handle decimal and hexadecimal
 			if (tokens[p].str[0]=='0' && (tokens[p].str[1]=='x' || tokens[p].str[1]=='X'))
 				sscanf(tokens[p].str, "%x", &val);
 			else
 				sscanf(tokens[p].str, "%u", &val);
 			return val;
-		} else if (tokens[p].type == 'R') {
+		} else if (tokens[p].type == REG) {
 			uint32_t val;
 			if (!get_reg_val(tokens[p].str, &val)) { *success = false; return 0; }
 			return val;
@@ -167,13 +171,35 @@ static uint32_t eval(int p, int q, bool *success) {
 		int op = -1;
 		int level = 0;
 		int i;
+
+		// First pass: look for '+' or '-' at the outermost level
 		for (i = p; i <= q; i++) {
 			if (tokens[i].type == '(') level++;
 			else if (tokens[i].type == ')') level--;
 			else if (level == 0) {
-				if (tokens[i].type == '+' || tokens[i].type == '-') op = i;
-			}
+				if (tokens[i].type == '+' || tokens[i].type == '-') {
+					op = i;
+					break;
+				}
+	
+            }
 		}
+
+		// If no '+' or '-', look for '*' or '/'
+		  if (op == -1) {
+            level = 0;
+            for (i = q; i >= p; i--) {
+                if (tokens[i].type == ')') level++;
+                else if (tokens[i].type == '(') level--;
+                else if (level == 0) {
+                    if (tokens[i].type == '*' || tokens[i].type == '/') {
+                        op = i;
+                        break;
+                    }
+                }
+            }
+        }
+
 		if (op == -1) { *success = false; return 0; }
 		uint32_t val1 = eval(p, op-1, success);
 		if (!*success) return 0;
@@ -182,6 +208,10 @@ static uint32_t eval(int p, int q, bool *success) {
 		switch(tokens[op].type) {
 			case '+': return val1 + val2;
 			case '-': return val1 - val2;
+			case '*': return val1 * val2;
+            case '/': 
+                if (val2 == 0) { *success = false; return 0; }  // prevent divide by zero
+                return val1 / val2;
 			default: *success = false; return 0;
 		}
 	}
@@ -210,3 +240,41 @@ uint32_t expr(char *e, bool *success) {
 	return eval(0, nr_token-1, success);
 }
 
+// [PA1 stage2 mandatory task 3]
+// Run test cases for arithmetic expression lexical analysis
+// Print all tokens of the current expression
+static void print_tokens() {
+    printf("Tokens:\n");
+	int i;
+    for (i = 0; i < nr_token; i++) {
+        printf("  %d: type=%d, str=\"%s\"\n", i, tokens[i].type, tokens[i].str);
+    }
+}
+
+// Run some test expressions
+void test_expr() {
+    const char *tests[] = {
+        "1+2",
+        "10-3",
+        "2*3+4",
+        "(1+2)*(3-4)",
+        "0x10+5",
+        NULL
+    };
+		int i;
+    for (i = 0; tests[i] != NULL; i++) {
+        bool success = true;
+        printf("\n==== Test %d: \"%s\" ====\n", i+1, tests[i]);
+
+        uint32_t result = expr((char*)tests[i], &success);
+
+        // Print tokens after parsing
+        print_tokens();
+
+        if (success) {
+            printf("Result = %u (0x%x)\n", result, result);
+        } else {
+            printf("Evaluation failed!\n");
+        }
+    }
+}
