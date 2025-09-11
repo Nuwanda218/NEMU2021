@@ -72,7 +72,8 @@ Token tokens[32];
 int nr_token;
 
 /* Check register value */
-static bool get_reg_val(const char *reg, uint32_t *val) {
+
+/*static bool get_reg_val(const char *reg, uint32_t *val) {
     if(strcmp(reg, "$eax")==0) *val = cpu.eax;
     else if(strcmp(reg, "$ecx")==0) *val = cpu.ecx;
     else if(strcmp(reg, "$edx")==0) *val = cpu.edx;
@@ -83,7 +84,7 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
     else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
     else return false;
     return true;
-}
+}*/
 
 static bool make_token(char *e) {
 	int position = 0;
@@ -177,11 +178,7 @@ static int32_t eval(int p, int q, bool *success) {
 			else
 				sscanf(tokens[p].str, "%u", &val);
 			return val;
-		} else if (tokens[p].type == REG) {
-			uint32_t val;
-			if (!get_reg_val(tokens[p].str, &val)) { *success = false; return 0; }
-			return val;
-		} else { *success = false; return 0; }
+		}
 	}  // If the range is wrapped by a complete pair of parentheses
     if (check_parentheses(p, q)) {
         return eval(p+1, q-1, success);
@@ -196,9 +193,9 @@ static int32_t eval(int p, int q, bool *success) {
     // Find the main operator in the current range
     int op = -1;
     int level = 0;
-	int i;
-
+	
 		// First pass: look for '+' or '-' at the outermost level
+		int i;
 		for (i = p; i <= q; i++) {
 			if (tokens[i].type == '(') level++;
 			else if (tokens[i].type == ')') level--;
