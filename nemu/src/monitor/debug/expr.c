@@ -13,7 +13,7 @@
 enum {
 	NOTYPE = 256, 
 	EQ, // "==" (provided in the framework, can ignore for now)
-    NUM = 258,   // number (decimal or hex)
+    NUM,   // number (decimal or hex)
     REG    // register
 
 	/* TODO: Add more token types */
@@ -68,8 +68,8 @@ typedef struct token {
 	char str[32];
 } Token;
 
-Token tokens[32];
-int nr_token;
+Token tokens[64];
+int nr_token = 0;
 
 /* Check register value */
 
@@ -233,8 +233,6 @@ static int32_t eval(int p, int q, bool *success) {
 	}
 
 
-
-
 int32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
 		*success = false;
@@ -258,7 +256,7 @@ int32_t expr(char *e, bool *success) {
 // [PA1 stage2 mandatory task 3]
 // Run test cases for arithmetic expression lexical analysis
 // Print all tokens of the current expression
-static void print_tokens() {
+/*static void print_tokens() {
     printf("Tokens:\n");
 	int i;
     for (i = 0; i < nr_token; i++) {
@@ -292,4 +290,4 @@ void test_expr() {
             printf("Evaluation failed!\n");
         }
     }
-}
+}*/
