@@ -94,6 +94,24 @@ static int cmd_x(char *args) {
     return 0;
 }
 
+static int cmd_p(char *args) {
+    if (args == NULL) {
+        printf("Usage: p EXPR\n");
+        return 0;
+    }
+
+    bool success = true;
+    int32_t result = expr(args, &success);  
+
+    if (success) {
+        printf("%s = %d (0x%x)\n", args, result, result);
+    } else {
+        printf("Evaluation failed for expression: %s\n", args);
+    }
+
+    return 0;
+}
+
 
 static int cmd_help(char *args);
 
@@ -105,9 +123,11 @@ static struct {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
-        { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
+    { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
 	{ "info", "Display program status (usage: info r)", cmd_info },
-	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x }
+	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x },
+	{ "p", "Evaluate and print the value of an expression (usage: p EXPR)", cmd_p },
+
 
 	/* TODO: Add more commands */
 
