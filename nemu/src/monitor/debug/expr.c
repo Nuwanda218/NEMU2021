@@ -164,13 +164,13 @@ static bool check_parentheses(int p, int q) {
 }
 
 /* Recursive evaluation */
-static uint32_t eval(int p, int q, bool *success) {
+static int32_t eval(int p, int q, bool *success) {
 	if (p > q) { *success = false; return 0; }
 
 	// Single token
     if (p == q) {
         if (tokens[p].type == NUM) {
-            uint32_t val;
+            int32_t val;
 			// handle decimal and hexadecimal
 			if (tokens[p].str[0]=='0' && (tokens[p].str[1]=='x' || tokens[p].str[1]=='X'))
 				sscanf(tokens[p].str, "%x", &val);
@@ -188,7 +188,7 @@ static uint32_t eval(int p, int q, bool *success) {
     }
 	 // Handle unary operators
     if (tokens[p].type == '-' || tokens[p].type == '+') {
-        uint32_t val = eval(p+1, q, success);
+        int32_t val = eval(p+1, q, success);
         if (!*success) return 0;
         return tokens[p].type == '-' ? -val : val;
     }
@@ -227,9 +227,9 @@ static uint32_t eval(int p, int q, bool *success) {
         }
 
 		if (op == -1) { *success = false; return 0; }
-		uint32_t val1 = eval(p, op-1, success);
+		int32_t val1 = eval(p, op-1, success);
 		if (!*success) return 0;
-		uint32_t val2 = eval(op+1, q, success);
+		int32_t val2 = eval(op+1, q, success);
 		if (!*success) return 0;
 
 
@@ -247,7 +247,7 @@ static uint32_t eval(int p, int q, bool *success) {
 
 
 
-uint32_t expr(char *e, bool *success) {
+int32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
 		*success = false;
 		return 0;
@@ -256,10 +256,9 @@ uint32_t expr(char *e, bool *success) {
 
     if (nr_token == 1 && tokens[0].type == 'N') {
         if (tokens[0].str[1] == 'x' || tokens[0].str[0] == '0') {
-        
-            return strtoul(tokens[0].str, NULL, 0);
+        	return (int32_t)strtoul(tokens[0].str, NULL, 0);  // hex -> int32
         } else {
-            return (uint32_t)atoi(tokens[0].str);
+            return atoi(tokens[0].str);
         }
     }
 
