@@ -37,7 +37,7 @@ static struct rule {
     {"==", EQ},                     // equal
     {"0[xX][0-9a-fA-F]+", NUM},  // hex number
     {"[0-9]+", NUM},              // decimal number
-    {"\\$[a-zA-Z]+", REG},        // registers
+    {"\\$[a-z]+", REG},        // registers
     {"\\(", '('},                 // left parenthesis
     {"\\)", ')'}                  // right parenthesis
 };
@@ -129,15 +129,11 @@ static bool make_token(char *e) {
         				break;
     				case REG:
                         // Register
-						if (!get_reg_val(substr_start, NULL)) {
-                            printf("Invalid register: %.*s\n", substr_len, substr_start);
-                            return false;
-                        }
-        				tokens[nr_token].type = REG;
-        				strncpy(tokens[nr_token].str, substr_start, substr_len);
-        				tokens[nr_token].str[substr_len] = '\0';
-        				nr_token++;
-        				break;
+						tokens[nr_token].type = REG;
+    					strncpy(tokens[nr_token].str, substr_start, substr_len);
+   					 	tokens[nr_token].str[substr_len] = '\0';
+    					nr_token++;
+   						break;
     				default:
         				panic("Unknown token type in make_token");
 	  }
