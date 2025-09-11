@@ -218,56 +218,71 @@ static int32_t eval(int p, int q, bool *success) {
         }
     }
 
-		// If no '+' or '-', look for '*' or '/'
-		  if (op == -1) {
-            level = 0;
-            for (i = q; i >= p; i--) {
-                if (tokens[i].type == ')') level++;
+	// Pass 2: if not found, look for '*' or '/' (higher precedence)
+    if (op == -1) {
+        level = 0;
+		int i;
+        for (i = q; i >= p; i--) {
+            if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0 && (tokens[i].type == '*' || tokens[i].type == '/')) {
-                op = i; 
-				break;
+                op = i;
+                break;
             }
         }
     }
 
-		if (op == -1) { *success = false; return 0; }
-		int32_t val1 = eval(p, op-1, success);
-		if (!*success) return 0;
-		int32_t val2 = eval(op+1, q, success);
-		if (!*success) return 0;
+	if (op == -1) { *success = false; return 0; }
 
+	 // 5. Recursively evaluate left and right subexpressions
+    int32_t val1 = eval(p, op - 1, success);
+    if (!*success) return 0;
+    int32_t val2 = eval(op + 1, q, success);
+    if (!*success) return 0;
 
-		switch(tokens[op].type) {
-			case '+': return val1 + val2;
-			case '-': return val1 - val2;
-			case '*': return val1 * val2;
-            case '/': 
-                if (val2 == 0) { *success = false; return 0; }  // prevent divide by zero
-                return val1 / val2;
-			default: *success = false; return 0;
-		}
-	}
+	// 6. Apply the operator
+		switch (tokens[op].type) {
+        case '+': return val1 + val2;
+        case '-': return val1 - val2;
+        case '*': return val1 * val2;
+        case '/': 
+            if (val2 == 0) { *success = false; return 0; }
+            return val1 / val2;
+        default:
+            *success = false;
+            return 0;
+    }
+}
 
 
 int32_t expr(char *e, bool *success) {
-	if(!make_token(e)) {
-		*success = false;
-		return 0;
-	}
-	*success = true;
-
-    if (nr_token == 1 && tokens[0].type == 'N') {
-        if (tokens[0].str[1] == 'x' || tokens[0].str[0] == '0') {
-        	return (int32_t)strtoul(tokens[0].str, NULL, 0);  // hex -> int32
-        } else {
-            return atoi(tokens[0].str);
-        }
+	// 1. Tokenize the input expression
+    if (!make_token(e)) {
+        *success = false;
+        return 0;
     }
 
+    *success = true;
+
+	// 2. Handle single token (number or register)
+    if (nr_token == 1) {
+        if (tokens[0].type == NUM) {
+            return (int32_t)strtol(tokens[0].str, NULL, 0);  // parse decimal or hex
+        } else if (tokens[0].type == REG) {
+            uint32_t val;
+            if (!get_reg_val(tokens[0].str, &val)) {
+                *success = false;
+                return 0;
+            }
+            return (int32_t)val;
+        }
+    }
+    
+	 // 3. Evaluate the full expression recursively
+    int32_t result = eval(0, nr_token - 1, success);
+
 	/* TODO: Insert codes to evaluate the expression. */
-	*success = true;
-	return eval(0, nr_token-1, success);
+	return result;
 }
 
 // [PA1 stage2 mandatory task 3]
@@ -289,6 +304,10 @@ void test_expr() {
         "2*3+4",
         "(1+2)*(3-4)",
         "0x10+5",
+        "$eax+1",   // test register (assuming cpu.eax initialized)
+        "-5 + 3",
+        "(-2)*4",
+        "3 + 4 * 2 / (1 - 5)",
         NULL
     };
 		int i;
@@ -296,7 +315,7 @@ void test_expr() {
         bool success = true;
         printf("\n==== Test %d: \"%s\" ====\n", i+1, tests[i]);
 
-        uint32_t result = expr((char*)tests[i], &success);
+        int32_t result = expr((char *)tests[i], &success);
 
         // Print tokens after parsing
         print_tokens();
