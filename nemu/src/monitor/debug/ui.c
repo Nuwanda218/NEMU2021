@@ -37,12 +37,12 @@ static int cmd_q(char *args) {
 	return -1;
 }
 static int cmd_si(char *args) {
-    int step = 1;   // Default step is 1
+    int step = 1;   
     if (args != NULL) {
-        step = atoi(args);   // Convert argument to integer
-        if (step <= 0) step = 1; // Prevent invalid input
+        step = atoi(args);   
+        if (step <= 0) step = 1; 
     }
-    cpu_exec(step);  // Execute the given number of instructions
+    cpu_exec(step);  
     return 0;
 }
 
@@ -105,7 +105,7 @@ static struct {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
-    { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
+        { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
 	{ "info", "Display program status (usage: info r)", cmd_info },
 	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x }
 
