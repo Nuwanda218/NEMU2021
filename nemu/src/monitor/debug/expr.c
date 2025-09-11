@@ -149,12 +149,28 @@ static bool make_token(char *e) {
 	return true; 
 }
 
+// Check if the entire token range [p, q] is wrapped by a pair of matching parentheses
+static bool check_parentheses(int p, int q) {
+    if (tokens[p].type != '(' || tokens[q].type != ')') return false;
+    int level = 0;
+	int i;
+    for (i = p; i <= q; i++) {
+        if (tokens[i].type == '(') level++;
+        else if (tokens[i].type == ')') level--;
+        // If the outermost pair does not cover the entire range
+        if (level == 0 && i < q) return false;
+    }
+    return level == 0;
+}
+
 /* Recursive evaluation */
 static uint32_t eval(int p, int q, bool *success) {
 	if (p > q) { *success = false; return 0; }
-	else if (p == q) {
-		if (tokens[p].type == NUM) {
-			uint32_t val;
+
+	// Single token
+    if (p == q) {
+        if (tokens[p].type == NUM) {
+            uint32_t val;
 			// handle decimal and hexadecimal
 			if (tokens[p].str[0]=='0' && (tokens[p].str[1]=='x' || tokens[p].str[1]=='X'))
 				sscanf(tokens[p].str, "%x", &val);
@@ -166,13 +182,21 @@ static uint32_t eval(int p, int q, bool *success) {
 			if (!get_reg_val(tokens[p].str, &val)) { *success = false; return 0; }
 			return val;
 		} else { *success = false; return 0; }
-	} else if (tokens[p].type == '(' && tokens[q].type == ')') {
-		return eval(p+1, q-1, success);
-	} else {
-		// find main operator
-		int op = -1;
-		int level = 0;
-		int i;
+	}  // If the range is wrapped by a complete pair of parentheses
+    if (check_parentheses(p, q)) {
+        return eval(p+1, q-1, success);
+    }
+	 // Handle unary operators
+    if (tokens[p].type == '-' || tokens[p].type == '+') {
+        uint32_t val = eval(p+1, q, success);
+        if (!*success) return 0;
+        return tokens[p].type == '-' ? -val : val;
+    }
+
+    // Find the main operator in the current range
+    int op = -1;
+    int level = 0;
+	int i;
 
 		// First pass: look for '+' or '-' at the outermost level
 		for (i = p; i <= q; i++) {
@@ -207,6 +231,8 @@ static uint32_t eval(int p, int q, bool *success) {
 		if (!*success) return 0;
 		uint32_t val2 = eval(op+1, q, success);
 		if (!*success) return 0;
+
+
 		switch(tokens[op].type) {
 			case '+': return val1 + val2;
 			case '-': return val1 - val2;
@@ -217,7 +243,7 @@ static uint32_t eval(int p, int q, bool *success) {
 			default: *success = false; return 0;
 		}
 	}
-}
+
 
 
 
