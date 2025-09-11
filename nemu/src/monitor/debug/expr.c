@@ -35,11 +35,11 @@ static struct rule {
 	{"\\*", '*'},                   // multiply
     {"\\/", '/'},                   // divide
     {"==", EQ},                     // equal
-    {"0[xX][0-9a-fA-F]+", 'H'},     // hex number
-    {"[0-9]+", 'D'},                // decimal number
-    {"\\$[a-zA-Z]+", 'R'},          // registers
-    {"\\(", '('},                   // left parenthesis
-    {"\\)", ')'}                    // right parenthesis
+    {"0[xX][0-9a-fA-F]+", NUM},  // hex number
+    {"[0-9]+", NUM},              // decimal number
+    {"\\$[a-zA-Z]+", REG},        // registers
+    {"\\(", '('},                 // left parenthesis
+    {"\\)", ')'}                  // right parenthesis
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -68,12 +68,12 @@ typedef struct token {
 	char str[32];
 } Token;
 
-Token tokens[64];
+Token tokens[32];
 int nr_token = 0;
 
 /* Check register value */
 
-/*static bool get_reg_val(const char *reg, uint32_t *val) {
+static bool get_reg_val(const char *reg, uint32_t *val) {
     if(strcmp(reg, "$eax")==0) *val = cpu.eax;
     else if(strcmp(reg, "$ecx")==0) *val = cpu.ecx;
     else if(strcmp(reg, "$edx")==0) *val = cpu.edx;
@@ -84,17 +84,18 @@ int nr_token = 0;
     else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
     else return false;
     return true;
-}*/
+}
 
 static bool make_token(char *e) {
 	int position = 0;
-	int i;
 	regmatch_t pmatch;
 	
 	nr_token = 0;
 
 	while(e[position] != '\0') {
 		/* Try all rules one by one. */
+		bool matched = false;
+		int i;
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
 				char *substr_start = e + position;
@@ -102,7 +103,7 @@ static bool make_token(char *e) {
 
 				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
 				position += substr_len;
-
+				matched = true;
 				/* TODO: Now a new token is recognized with rules[i]. Add codes
 				 * to record the token in the array `tokens'. For certain types
 				 * of tokens, some extra actions should be performed.
@@ -112,36 +113,41 @@ static bool make_token(char *e) {
     				case NOTYPE:
         				// Ignore spaces
         				break;
-    				case EQ:
     				case '+': case '-': case '*': case '/': case '(': case ')':
+                    case EQ:
         				tokens[nr_token].type = rules[i].token_type;
         				strncpy(tokens[nr_token].str, substr_start, substr_len);
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
         				break;
-    				case 'D':  // decimal number
-    				case 'H':  // hex number
+    				case NUM:
+                        // Decimal or hex number
         				tokens[nr_token].type = NUM;  
         				strncpy(tokens[nr_token].str, substr_start, substr_len);
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
         				break;
-    				case 'R':  // register
+    				case REG:
+                        // Register
+						if (!get_reg_val(substr_start, NULL)) {
+                            printf("Invalid register: %.*s\n", substr_len, substr_start);
+                            return false;
+                        }
         				tokens[nr_token].type = REG;
         				strncpy(tokens[nr_token].str, substr_start, substr_len);
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
-        					break;
+        				break;
     				default:
         				panic("Unknown token type in make_token");
-	    }
+	  }
 
 
-				break;
+				break;// Once matched, break the for-loop
 			}
 		}
 
-		if(i == NR_REGEX) {
+		if (!matched) {
 			printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
 			return false;
 		}
@@ -168,31 +174,42 @@ static bool check_parentheses(int p, int q) {
 static int32_t eval(int p, int q, bool *success) {
 	if (p > q) { *success = false; return 0; }
 
-	// Single token
+	// 1. Single token
     if (p == q) {
         if (tokens[p].type == NUM) {
-            int32_t val = (int32_t)strtol(tokens[p].str, NULL, 0);
-            return val;
-        } else { *success = false; return 0; }
-    }
-	  // If the range is wrapped by a complete pair of parentheses
+            return (int32_t)strtol(tokens[p].str, NULL, 0);
+        } else if (tokens[p].type == REG) {
+            uint32_t val;
+            if (!get_reg_val(tokens[p].str, &val)) {
+                *success = false;
+                return 0;
+            }
+            return (int32_t)val;
+        } else {
+            *success = false;
+            return 0;
+        }
+	}
+    
+	// 2. Check parentheses
     if (check_parentheses(p, q)) {
-        return eval(p+1, q-1, success);
+        return eval(p + 1, q - 1, success);
     }
-	 // Handle unary operators
+	  
+	// 3. Handle unary operator at the beginning
     if (tokens[p].type == '-' || tokens[p].type == '+') {
-        int32_t val = eval(p+1, q, success);
+        int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return tokens[p].type == '-' ? -val : val;
     }
 
-    // Find the main operator in the current range
+	// 4. Find main operator at the outermost level
     int op = -1;
     int level = 0;
 	
-		// First pass: look for '+' or '-' at the outermost level
+	// Pass 1: look for '+' or '-' (lowest precedence)
 		int i;
-		for (i = p; i <= q; i++) {
+		for (i = q; i >= p; i--) {// right-to-left for correct associativity
 			 if (tokens[i].type == ')') level++;
         else if (tokens[i].type == '(') level--;
         else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) {
@@ -256,7 +273,7 @@ int32_t expr(char *e, bool *success) {
 // [PA1 stage2 mandatory task 3]
 // Run test cases for arithmetic expression lexical analysis
 // Print all tokens of the current expression
-/*static void print_tokens() {
+static void print_tokens() {
     printf("Tokens:\n");
 	int i;
     for (i = 0; i < nr_token; i++) {
@@ -290,4 +307,4 @@ void test_expr() {
             printf("Evaluation failed!\n");
         }
     }
-}*/
+}
