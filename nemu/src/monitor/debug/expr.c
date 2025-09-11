@@ -317,7 +317,7 @@ void test_expr() {
         print_tokens();
 
         if (success) {
-            printf("Result = %u (0x%x)\n", result, result);
+            printf("Result = %d (0x%x)\n", result, result);
         } else {
             printf("Evaluation failed!\n");
         }
