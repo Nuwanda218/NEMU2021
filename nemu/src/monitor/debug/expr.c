@@ -251,6 +251,13 @@ static bool check_parentheses(int p, int q) {
     return level == 0;
 }
 
+static bool is_operator(int type) {
+    return type == '+' || type == '-' || type == '*' || type == '/' ||
+           type == '(' || type == AND || type == OR ||
+           type == EQ || type == NEQ || type == LT || type == LE ||
+           type == GT || type == GE || type == NOT;
+}
+
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
 	if (p > q) { *success = false; return 0; }
@@ -277,42 +284,18 @@ static int32_t eval(int p, int q, bool *success) {
         return eval(p + 1, q - 1, success);
     }
 	  
-	 /* handle unary operators */
-  if (tokens[p].type == DEREF) {
-    // Strip parentheses around subexpression
-    if (check_parentheses(p + 1, q)) {
-        p = p + 1;
-        q = q - 1;
-    }
+ // 3. Handle unary operators at the beginning
+   if (tokens[p].type == DEREF ||
+    (tokens[p].type == '-' && (p == 0 || is_operator(tokens[p-1].type))) ||
+    tokens[p].type == NOT) {
+    
 
-    // Evaluate address inside DEREF
-    bool addr_success = true;
-    int32_t addr = eval(p + 1, q, &addr_success);  // 注意 p+1
-    if (!addr_success) {
-        *success = false;
-        return 0;
-    }
-
-    int32_t val = swaddr_read(addr, 4);
-    return val;
-}
-
-
-
-
-
-   if (tokens[p].type == '-' &&
-    (p == 0 || tokens[p-1].type == '(' || tokens[p-1].type == AND || 
-     tokens[p-1].type == OR || tokens[p-1].type == EQ || tokens[p-1].type == NEQ ||
-     tokens[p-1].type == LT || tokens[p-1].type == LE || tokens[p-1].type == GT ||
-     tokens[p-1].type == GE)) {
-    int32_t val = eval(p + 1, q, success);
-    return -val;
-}
-
-    if (tokens[p].type == NOT) {
         int32_t val = eval(p + 1, q, success);
-        return !val;
+        if (!*success) return 0;
+
+        if (tokens[p].type == DEREF) return swaddr_read(val, 4);
+        if (tokens[p].type == '-')    return -val;
+        if (tokens[p].type == NOT)    return !val;
     }
 
 	// 4. Find main operator at the outermost level
@@ -320,11 +303,11 @@ static int32_t eval(int p, int q, bool *success) {
     int level = 0;
 	
 	  // Operator precedence from lowest to highest: OR > AND > EQ/NEQ > < <= > >= > + - > * /
-     int precedence[][2] = {
-        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
+    int precedence[][2] = {
+        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {LE, LT}, {'+', '-'}, {'*', '/'}
     };
     int pri;
-    for (pri = 0; pri < 6; pri++) {
+     for (pri = 0; pri < 7; pri++) {
         level = 0;
         int i;
         for (i = q; i >= p; i--) {
@@ -339,7 +322,10 @@ static int32_t eval(int p, int q, bool *success) {
         }
         if (op != -1) break;
     }
-	if (op == -1) { *success = false; return 0; }
+	if (op == -1) {
+        *success = false;
+        return 0;
+    }
 
 	 // 5. Recursively evaluate left and right subexpressions
     int32_t val1 = eval(p, op - 1, success);
