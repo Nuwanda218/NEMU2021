@@ -240,10 +240,11 @@ static int32_t eval(int p, int q, bool *success) {
     }
 	  
 	 /* handle unary operators */
-    if (tokens[p].type == NOT) {
-        int32_t val = eval(p + 1, q, success);
-        return !val;
+    if (tokens[p].type == NOT || tokens[p].type == '!') {
+    int32_t val = eval(p + 1, q, success);
+    return !val;
     }
+
     if (tokens[p].type == '-' &&
         (p == 0 || tokens[p-1].type == '(')) {
         int32_t val = eval(p + 1, q, success);
