@@ -251,18 +251,16 @@ static bool check_parentheses(int p, int q) {
     return level == 0;
 }
 
-static bool is_operator(int type) {
-    return type == '+' || type == '-' || type == '*' || type == '/' ||
-           type == '(' || type == AND || type == OR ||
-           type == EQ || type == NEQ || type == LT || type == LE ||
-           type == GT || type == GE || type == NOT;
-}
 
 /* Recursive evaluation */
-static int32_t eval(int p, int q, bool *success) {
-    if (p > q) { *success = false; return 0; }
+static bool is_unary(int type) {
+    return type == DEREF || type == NOT || type == '-';
+}
 
-    int i, pri, level;  
+static int32_t eval(int p, int q, bool *success) {
+    int i;
+
+    if (p > q) { *success = false; return 0; }
 
     // 1. Single token
     if (p == q) {
@@ -286,33 +284,45 @@ static int32_t eval(int p, int q, bool *success) {
         return eval(p + 1, q - 1, success);
     }
 
-    // 3. Unary operators: DEREF, '-', NOT
-    if (tokens[p].type == DEREF ||
-        (tokens[p].type == '-' && (p == 0 || is_operator(tokens[p-1].type))) ||
-        tokens[p].type == NOT) {
-
-        int32_t val = eval(p + 1, q, success);
+    // 3. Unary operators
+    if (tokens[p].type == DEREF) {
+        int32_t addr = eval(p + 1, q, success);
         if (!*success) return 0;
-
-        if (tokens[p].type == DEREF) return swaddr_read(val, 4);
-        if (tokens[p].type == '-') return -val;
-        if (tokens[p].type == NOT) return !val;
+        return swaddr_read(addr, 4);
     }
 
-    // 4. Find main operator (binary, lowest precedence) outside parentheses
+    if (tokens[p].type == '-') {
+        // unary minus if first token or preceded by operator/left paren
+        if (p == 0 || is_unary(tokens[p - 1].type) || tokens[p-1].type == '(') {
+            int32_t val = eval(p + 1, q, success);
+            if (!*success) return 0;
+            return -val;
+        }
+    }
+
+    if (tokens[p].type == NOT) {
+        int32_t val = eval(p + 1, q, success);
+        if (!*success) return 0;
+        return !val;
+    }
+
+    // 4. Find main operator (lowest precedence) ignoring unary operators
     int op = -1;
+    int level = 0;
     int precedence[][2] = {
         {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
     };
+    int pri;
     for (pri = 0; pri < 6; pri++) {
         level = 0;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0) {
+                // ignore unary operators
+                if (tokens[i].type == DEREF || tokens[i].type == '-' || tokens[i].type == NOT) continue;
+
                 if (tokens[i].type == precedence[pri][0] || tokens[i].type == precedence[pri][1]) {
-                    if (tokens[i].type == DEREF || tokens[i].type == NOT) continue;
-                    if (tokens[i].type == '-' && (i == 0 || is_operator(tokens[i-1].type))) continue;
                     op = i;
                     break;
                 }
@@ -323,7 +333,7 @@ static int32_t eval(int p, int q, bool *success) {
 
     if (op == -1) { *success = false; return 0; }
 
-    // 5. Recursively evaluate left and right subexpressions
+    // 5. Recursively evaluate left and right
     int32_t val1 = eval(p, op - 1, success);
     if (!*success) return 0;
     int32_t val2 = eval(op + 1, q, success);
@@ -335,21 +345,18 @@ static int32_t eval(int p, int q, bool *success) {
         case AND: return val1 && val2;
         case EQ:  return val1 == val2;
         case NEQ: return val1 != val2;
-        case LT:  return val1 <  val2;
+        case LT:  return val1 < val2;
         case LE:  return val1 <= val2;
-        case GT:  return val1 >  val2;
+        case GT:  return val1 > val2;
         case GE:  return val1 >= val2;
         case '+': return val1 + val2;
         case '-': return val1 - val2;
         case '*': return val1 * val2;
-        case '/': 
-            if (val2 == 0) { *success = false; return 0; }
-            return val1 / val2;
-        default:
-            *success = false;
-            return 0;
+        case '/': if (val2 == 0) { *success = false; return 0; } return val1 / val2;
+        default: *success = false; return 0;
     }
 }
+
 
 
 
