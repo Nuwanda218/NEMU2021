@@ -260,9 +260,11 @@ static bool is_operator(int type) {
 
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
-	if (p > q) { *success = false; return 0; }
+    if (p > q) { *success = false; return 0; }
 
-	// 1. Single token
+    int i, pri, level;  
+
+    // 1. Single token
     if (p == q) {
         if (tokens[p].type == NUM) {
             return (int32_t)strtol(tokens[p].str, NULL, 0);
@@ -277,44 +279,40 @@ static int32_t eval(int p, int q, bool *success) {
             *success = false;
             return 0;
         }
-	}
-    
-	// 2. Check parentheses
+    }
+
+    // 2. Strip parentheses
     if (check_parentheses(p, q)) {
         return eval(p + 1, q - 1, success);
     }
-	  
- // 3. Handle unary operators at the beginning
-   if (tokens[p].type == DEREF ||
-    (tokens[p].type == '-' && (p == 0 || is_operator(tokens[p-1].type))) ||
-    tokens[p].type == NOT) {
-    
+
+    // 3. Unary operators: DEREF, '-', NOT
+    if (tokens[p].type == DEREF ||
+        (tokens[p].type == '-' && (p == 0 || is_operator(tokens[p-1].type))) ||
+        tokens[p].type == NOT) {
 
         int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
 
         if (tokens[p].type == DEREF) return swaddr_read(val, 4);
-        if (tokens[p].type == '-')    return -val;
-        if (tokens[p].type == NOT)    return !val;
+        if (tokens[p].type == '-') return -val;
+        if (tokens[p].type == NOT) return !val;
     }
 
-	// 4. Find main operator at the outermost level
+    // 4. Find main operator (binary, lowest precedence) outside parentheses
     int op = -1;
-    int level = 0;
-	
-	  // Operator precedence from lowest to highest: OR > AND > EQ/NEQ > < <= > >= > + - > * /
     int precedence[][2] = {
-        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {LE, LT}, {'+', '-'}, {'*', '/'}
+        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
     };
-    int pri;
-     for (pri = 0; pri < 7; pri++) {
+    for (pri = 0; pri < 6; pri++) {
         level = 0;
-        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0) {
                 if (tokens[i].type == precedence[pri][0] || tokens[i].type == precedence[pri][1]) {
+                    if (tokens[i].type == DEREF || tokens[i].type == NOT) continue;
+                    if (tokens[i].type == '-' && (i == 0 || is_operator(tokens[i-1].type))) continue;
                     op = i;
                     break;
                 }
@@ -322,18 +320,16 @@ static int32_t eval(int p, int q, bool *success) {
         }
         if (op != -1) break;
     }
-	if (op == -1) {
-        *success = false;
-        return 0;
-    }
 
-	 // 5. Recursively evaluate left and right subexpressions
+    if (op == -1) { *success = false; return 0; }
+
+    // 5. Recursively evaluate left and right subexpressions
     int32_t val1 = eval(p, op - 1, success);
     if (!*success) return 0;
     int32_t val2 = eval(op + 1, q, success);
     if (!*success) return 0;
 
-	 // 6. Apply the operator
+    // 6. Apply operator
     switch (tokens[op].type) {
         case OR:  return val1 || val2;
         case AND: return val1 && val2;
@@ -354,6 +350,7 @@ static int32_t eval(int p, int q, bool *success) {
             return 0;
     }
 }
+
 
 
 
