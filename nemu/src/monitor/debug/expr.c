@@ -111,10 +111,12 @@ static void mark_deref() {
                 tokens[i-1].type == LE   || tokens[i-1].type == GT   ||
                 tokens[i-1].type == GE   || tokens[i-1].type == NOT) {
                 tokens[i].type = DEREF;
+                printf("Mark token[%d] '*' as DEREF\n", i);
             }
         }
     }
 }
+
 static bool make_token(char *e) {
 	int position = 0;
 	regmatch_t pmatch;
@@ -247,21 +249,24 @@ static int32_t eval(int p, int q, bool *success) {
     }
 	  
 	 /* handle unary operators */
-    if (tokens[p].type == NOT) {
-    int32_t val = eval(p + 1, q, success);
-    return !val;
-    }
-
-
-    if (tokens[p].type == '-' &&
-        (p == 0 || tokens[p-1].type == '(')) {
-        int32_t val = eval(p + 1, q, success);
-        return -val;
-    }
     if (tokens[p].type == DEREF) {
         int32_t addr = eval(p + 1, q, success);
         if (!*success) return 0;
-        return swaddr_read(addr, 4);
+            return swaddr_read(addr, 4);
+    }
+
+    if (tokens[p].type == '-' &&
+        (p == 0 || tokens[p-1].type == '(' || tokens[p-1].type == AND || 
+        tokens[p-1].type == OR || tokens[p-1].type == EQ || tokens[p-1].type == NEQ ||
+        tokens[p-1].type == LT || tokens[p-1].type == LE || tokens[p-1].type == GT ||
+        tokens[p-1].type == GE)) {
+        int32_t val = eval(p + 1, q, success);
+        return -val;
+    }
+
+    if (tokens[p].type == NOT) {
+        int32_t val = eval(p + 1, q, success);
+        return !val;
     }
 
 	// 4. Find main operator at the outermost level
