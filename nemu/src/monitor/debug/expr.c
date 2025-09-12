@@ -79,24 +79,52 @@ typedef struct token {
 	char str[32];
 } Token;
 
-Token tokens[32];
+Token tokens[128];
 int nr_token = 0;
 
 /* Check register value */
 
+/* Check register value: support 32-bit, 16-bit, and 8-bit registers */
 static bool get_reg_val(const char *reg, uint32_t *val) {
-    if(strcmp(reg, "$eax")==0) *val = cpu.eax;
-    else if(strcmp(reg, "$ecx")==0) *val = cpu.ecx;
-    else if(strcmp(reg, "$edx")==0) *val = cpu.edx;
-    else if(strcmp(reg, "$ebx")==0) *val = cpu.ebx;
-    else if(strcmp(reg, "$esp")==0) *val = cpu.esp;
-    else if(strcmp(reg, "$ebp")==0) *val = cpu.ebp;
-    else if(strcmp(reg, "$esi")==0) *val = cpu.esi;
-    else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
-    else if(strcmp(reg, "$eip") == 0) *val = cpu.eip;
+    if (strcmp(reg, "$eax") == 0) *val = cpu.eax;
+    else if (strcmp(reg, "$ax") == 0) *val = cpu.eax & 0xFFFF;
+    else if (strcmp(reg, "$al") == 0) *val = cpu.eax & 0xFF;
+    else if (strcmp(reg, "$ah") == 0) *val = (cpu.eax >> 8) & 0xFF;
+
+    else if (strcmp(reg, "$ebx") == 0) *val = cpu.ebx;
+    else if (strcmp(reg, "$bx") == 0) *val = cpu.ebx & 0xFFFF;
+    else if (strcmp(reg, "$bl") == 0) *val = cpu.ebx & 0xFF;
+    else if (strcmp(reg, "$bh") == 0) *val = (cpu.ebx >> 8) & 0xFF;
+
+    else if (strcmp(reg, "$ecx") == 0) *val = cpu.ecx;
+    else if (strcmp(reg, "$cx") == 0) *val = cpu.ecx & 0xFFFF;
+    else if (strcmp(reg, "$cl") == 0) *val = cpu.ecx & 0xFF;
+    else if (strcmp(reg, "$ch") == 0) *val = (cpu.ecx >> 8) & 0xFF;
+
+    else if (strcmp(reg, "$edx") == 0) *val = cpu.edx;
+    else if (strcmp(reg, "$dx") == 0) *val = cpu.edx & 0xFFFF;
+    else if (strcmp(reg, "$dl") == 0) *val = cpu.edx & 0xFF;
+    else if (strcmp(reg, "$dh") == 0) *val = (cpu.edx >> 8) & 0xFF;
+
+    else if (strcmp(reg, "$esi") == 0) *val = cpu.esi;
+    else if (strcmp(reg, "$di") == 0) *val = cpu.edi & 0xFFFF; // 16-bit alias
+    else if (strcmp(reg, "$edi") == 0) *val = cpu.edi;
+    else if (strcmp(reg, "$si") == 0) *val = cpu.esi & 0xFFFF; // 16-bit alias
+
+    else if (strcmp(reg, "$esp") == 0) *val = cpu.esp;
+    else if (strcmp(reg, "$sp") == 0) *val = cpu.esp & 0xFFFF; // 16-bit alias
+
+    else if (strcmp(reg, "$ebp") == 0) *val = cpu.ebp;
+    else if (strcmp(reg, "$bp") == 0) *val = cpu.ebp & 0xFFFF; // 16-bit alias
+
+    else if (strcmp(reg, "$eip") == 0) *val = cpu.eip;
+
     else return false;
+
     return true;
 }
+
+
 
 /* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
@@ -263,13 +291,15 @@ static int32_t eval(int p, int q, bool *success) {
 
     // Evaluate the address inside DEREF
     int32_t addr = eval(p, q, success);
-    if (!*success) {
-        printf("Failed to eval address for DEREF\n");
-        return 0;
-    }
+    printf("DEREF address = 0x%x\n", addr);
+    if (!*success) return 0;
+    int32_t val = swaddr_read(addr, 4);
+    printf("DEREF read 0x%x from address 0x%x\n", val, addr);
+    return val;
+
 
     // Read memory
-    int32_t val = swaddr_read(addr, 4);
+    val = swaddr_read(addr, 4);
     printf("DEREF read 0x%x from address 0x%x\n", val, addr);
     return val;
 }
