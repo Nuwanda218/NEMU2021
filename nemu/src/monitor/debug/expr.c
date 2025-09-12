@@ -156,13 +156,17 @@ static bool make_token(char *e) {
                     /* arithmetic and parentheses and logical NOT */
                     case '+': case '-': case '*': case '/':
                     case '(': case ')':
-                    case '!':
                         tokens[nr_token].type = rules[i].token_type;
                         strncpy(tokens[nr_token].str, substr_start, substr_len);
                         tokens[nr_token].str[substr_len] = '\0';
                         nr_token++;
                         break;
-
+                    case '!':
+                    tokens[nr_token].type = NOT;  
+                    strncpy(tokens[nr_token].str, substr_start, substr_len);
+                    tokens[nr_token].str[substr_len] = '\0';
+                    nr_token++;
+                        break;
     				case NUM:
                         // Decimal or hex number
         				tokens[nr_token].type = NUM;  
@@ -240,10 +244,11 @@ static int32_t eval(int p, int q, bool *success) {
     }
 	  
 	 /* handle unary operators */
-    if (tokens[p].type == NOT || tokens[p].type == '!') {
+    if (tokens[p].type == NOT) {
     int32_t val = eval(p + 1, q, success);
     return !val;
     }
+
 
     if (tokens[p].type == '-' &&
         (p == 0 || tokens[p-1].type == '(')) {
