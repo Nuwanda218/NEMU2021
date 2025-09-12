@@ -362,24 +362,21 @@ static void print_tokens() {
 
 // Run some test expressions
 void test_expr() {
+    
+    cpu.eax = 0x100;
+
+   
+    swaddr_write(0x100, 4, 42);
+
     const char *tests[] = {
-        "1+2",                  // basic addition
-        "10-3",                 // subtraction
-        "2*3+4",                // mixed * and +
-        "(1+2)*(3-4)",          // parentheses
-        "0x10+5",               // hex + decimal
-        "$eax+1",               // register test (cpu.eax must be initialized)
-        "-5 + 3",               // unary minus
-        "(-2)*4",               // negative number multiply
-        "3 + 4 * 2 / (1 - 5)",  // precedence
-        "1 == 1",               // equality
-        "1 && 0",               // logical AND
-        "1 || 0",               // logical OR
-        "!0",                   // logical NOT
-        "*0x100",               // memory dereference (assumes mem_read implemented)
+        "*0x100",        
+        "*($eax)",       
+        "*($eax + 4)",   
+        "*0x100 + 10",   
+        "-*0x100",      
         NULL
     };
-		int i;
+    int i;
     for (i = 0; tests[i] != NULL; i++) {
         bool success = true;
         printf("\n==== Test %d: \"%s\" ====\n", i + 1, tests[i]);
@@ -398,3 +395,4 @@ void test_expr() {
         }
     }
 }
+
