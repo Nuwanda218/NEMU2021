@@ -260,6 +260,7 @@ static int32_t eval(int p, int q, bool *success) {
     }
     if (tokens[p].type == DEREF) {
         int32_t addr = eval(p + 1, q, success);
+        if (!*success) return 0;
         return swaddr_read(addr, 4);
     }
 
