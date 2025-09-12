@@ -140,11 +140,11 @@ static void mark_deref() {
                 tokens[i-1].type == LE   || tokens[i-1].type == GT   ||
                 tokens[i-1].type == GE   || tokens[i-1].type == NOT) {
                 tokens[i].type = DEREF;
-                printf("Mark token[%d] '*' as DEREF\n", i);
             }
         }
     }
 }
+
 
 static bool make_token(char *e) {
 	int position = 0;
@@ -279,28 +279,24 @@ static int32_t eval(int p, int q, bool *success) {
 	  
 	 /* handle unary operators */
   if (tokens[p].type == DEREF) {
-    printf("Evaluating DEREF at tokens[%d..%d]\n", p, q);
-
     // Strip parentheses around subexpression
     if (check_parentheses(p + 1, q)) {
-        printf("DEREF subexpression wrapped by parentheses, strip them\n");
         p = p + 1;
         q = q - 1;
     }
 
     // Evaluate address inside DEREF
     bool addr_success = true;
-    int32_t addr = eval(p + 1, q, &addr_success); // <-- 注意 p+1
+    int32_t addr = eval(p + 1, q, &addr_success);  // 注意 p+1
     if (!addr_success) {
-        printf("Failed to eval address for DEREF\n");
         *success = false;
         return 0;
     }
 
     int32_t val = swaddr_read(addr, 4);
-    printf("DEREF read 0x%x from address 0x%x\n", val, addr);
     return val;
 }
+
 
 
 
