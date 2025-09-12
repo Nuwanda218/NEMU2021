@@ -250,10 +250,29 @@ static int32_t eval(int p, int q, bool *success) {
 	  
 	 /* handle unary operators */
     if (tokens[p].type == DEREF) {
-        int32_t addr = eval(p + 1, q, success);
-        if (!*success) return 0;
-            return swaddr_read(addr, 4);
+    // Debug: print info
+    printf("Evaluating DEREF at tokens[%d..%d]\n", p, q);
+
+    // If the subexpression is wrapped by parentheses, strip them
+    if (check_parentheses(p + 1, q)) {
+        printf("DEREF subexpression wrapped by parentheses, strip them\n");
+        p = p + 1;
+        q = q - 1;
     }
+
+    // Evaluate the address inside DEREF
+    int32_t addr = eval(p, q, success);
+    if (!*success) {
+        printf("Failed to eval address for DEREF\n");
+        return 0;
+    }
+
+    // Read memory
+    int32_t val = swaddr_read(addr, 4);
+    printf("DEREF read 0x%x from address 0x%x\n", val, addr);
+    return val;
+}
+
 
     if (tokens[p].type == '-' &&
         (p == 0 || tokens[p-1].type == '(' || tokens[p-1].type == AND || 
