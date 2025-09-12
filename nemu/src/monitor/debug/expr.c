@@ -306,16 +306,9 @@ static int32_t eval(int p, int q, bool *success) {
      tokens[p-1].type == OR || tokens[p-1].type == EQ || tokens[p-1].type == NEQ ||
      tokens[p-1].type == LT || tokens[p-1].type == LE || tokens[p-1].type == GT ||
      tokens[p-1].type == GE)) {
-    // Evaluate only the next token or parenthesized subexpression
-    int next_end = p + 1;
-    if (check_parentheses(p + 1, q)) { // if next is wrapped by ()
-        next_end = q;
-    }
-    int32_t val = eval(p + 1, next_end, success);
-    if (!*success) return 0;
+    int32_t val = eval(p + 1, q, success);
     return -val;
 }
-
 
     if (tokens[p].type == NOT) {
         int32_t val = eval(p + 1, q, success);
