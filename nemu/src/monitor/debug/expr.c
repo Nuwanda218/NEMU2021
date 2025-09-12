@@ -93,6 +93,7 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
     else if(strcmp(reg, "$ebp")==0) *val = cpu.ebp;
     else if(strcmp(reg, "$esi")==0) *val = cpu.esi;
     else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
+    else if(strcmp(reg, "$eip") == 0) *val = cpu.eip;
     else return false;
     return true;
 }
@@ -274,14 +275,14 @@ static int32_t eval(int p, int q, bool *success) {
 }
 
 
-    if (tokens[p].type == '-' &&
-        (p == 0 || tokens[p-1].type == '(' || tokens[p-1].type == AND || 
-        tokens[p-1].type == OR || tokens[p-1].type == EQ || tokens[p-1].type == NEQ ||
-        tokens[p-1].type == LT || tokens[p-1].type == LE || tokens[p-1].type == GT ||
-        tokens[p-1].type == GE)) {
-        int32_t val = eval(p + 1, q, success);
-        return -val;
-    }
+   if (tokens[p].type == '-' &&
+    (p == 0 || tokens[p-1].type == '(' || tokens[p-1].type == AND || 
+     tokens[p-1].type == OR || tokens[p-1].type == EQ || tokens[p-1].type == NEQ ||
+     tokens[p-1].type == LT || tokens[p-1].type == LE || tokens[p-1].type == GT ||
+     tokens[p-1].type == GE)) {
+    int32_t val = eval(p + 1, q, success);
+    return -val;
+}
 
     if (tokens[p].type == NOT) {
         int32_t val = eval(p + 1, q, success);
