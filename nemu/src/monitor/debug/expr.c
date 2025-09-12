@@ -138,13 +138,21 @@ static bool make_token(char *e) {
     				case NOTYPE:
         				// Ignore spaces
         				break;
+                    case AND:        // &&
+                    case OR:         // ||
+                    case EQ:         // ==
+                    case NEQ:        // !=
+                    case LT:         // <
+                    case GT:         // >
+                    case LE:         // <=
+                    case GE:         // >=    
     				case '+': case '-': case '*': case '/': case '(': case ')':
-                    case EQ:
-        				tokens[nr_token].type = rules[i].token_type;
-        				strncpy(tokens[nr_token].str, substr_start, substr_len);
-        				tokens[nr_token].str[substr_len] = '\0';
-        				nr_token++;
-        				break;
+                    case '!':
+                        tokens[nr_token].type = rules[i].token_type;
+                        strncpy(tokens[nr_token].str, substr_start, substr_len);
+                        tokens[nr_token].str[substr_len] = '\0';
+                        nr_token++;
+                        break;
     				case NUM:
                         // Decimal or hex number
         				tokens[nr_token].type = NUM;  
