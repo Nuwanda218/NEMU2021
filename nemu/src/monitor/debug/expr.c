@@ -253,24 +253,15 @@ static bool check_parentheses(int p, int q) {
 
 
 
-// Check if a token type is a binary operator
-static bool is_operator(int type) {
-    switch (type) {
-        case '+': case '-': case '*': case '/':
-        case AND: case OR:
-        case EQ: case NEQ:
-        case LT: case LE: case GT: case GE:
-            return true;
-        default:
-            return false;
-    }
-}
 
+static bool is_operator(int type) {
+    return type == '+' || type == '-' || type == '*' || type == '/' ||
+           type == AND || type == OR || type == EQ || type == NEQ ||
+           type == LT || type == LE || type == GT || type == GE;
+}
 
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
-    int i;
-
     if (p > q) { *success = false; return 0; }
 
     // 1. Single token
@@ -290,55 +281,57 @@ static int32_t eval(int p, int q, bool *success) {
         }
     }
 
-    // 2. Strip parentheses
-    // Handle unary operators: DEREF, NOT, unary minus
+    // 2. Parentheses
+    if (check_parentheses(p, q)) {
+        return eval(p + 1, q - 1, success);
+    }
+
+    // 3. Unary operators
     if (tokens[p].type == DEREF) {
-        // *expr
         int32_t addr = eval(p + 1, q, success);
         if (!*success) return 0;
         return swaddr_read(addr, 4);
     }
 
+    if (tokens[p].type == '-' &&
+        (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(')) {
+
+        int next_end = p + 1;
+        if (check_parentheses(p + 1, q)) {
+            next_end = q;
+        }
+
+        int32_t val = eval(p + 1, next_end, success);
+        if (!*success) return 0;
+        return -val;
+    }
+
     if (tokens[p].type == NOT) {
-        // !expr
-        int32_t val = eval(p + 1, q, success);
+        int next_end = p + 1;
+        if (check_parentheses(p + 1, q)) {
+            next_end = q;
+        }
+        int32_t val = eval(p + 1, next_end, success);
         if (!*success) return 0;
         return !val;
     }
 
-    if (tokens[p].type == '-' &&
-    (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(')) {
-
-        // unary minus
-    int next_end = p + 1;
-    if (check_parentheses(p + 1, q)) {
-        next_end = q;       
-    }
-
-    int32_t val = eval(p + 1, next_end, success);
-    if (!*success) return 0;
-
-    return -val;
-}
-
-
-    // 4. Find main operator (lowest precedence) ignoring unary operators
+    // 4. Find main operator (lowest precedence at outermost level)
     int op = -1;
-    int level = 0;
     int precedence[][2] = {
         {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
     };
+
     int pri;
     for (pri = 0; pri < 6; pri++) {
-        level = 0;
+        int level = 0;
+        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0) {
-                // ignore unary operators
-                if (tokens[i].type == DEREF || tokens[i].type == '-' || tokens[i].type == NOT) continue;
-
-                if (tokens[i].type == precedence[pri][0] || tokens[i].type == precedence[pri][1]) {
+                if (tokens[i].type == precedence[pri][0] ||
+                    tokens[i].type == precedence[pri][1]) {
                     op = i;
                     break;
                 }
@@ -349,7 +342,7 @@ static int32_t eval(int p, int q, bool *success) {
 
     if (op == -1) { *success = false; return 0; }
 
-    // 5. Recursively evaluate left and right
+    // 5. Evaluate left and right
     int32_t val1 = eval(p, op - 1, success);
     if (!*success) return 0;
     int32_t val2 = eval(op + 1, q, success);
@@ -361,17 +354,22 @@ static int32_t eval(int p, int q, bool *success) {
         case AND: return val1 && val2;
         case EQ:  return val1 == val2;
         case NEQ: return val1 != val2;
-        case LT:  return val1 < val2;
+        case LT:  return val1 <  val2;
         case LE:  return val1 <= val2;
-        case GT:  return val1 > val2;
+        case GT:  return val1 >  val2;
         case GE:  return val1 >= val2;
         case '+': return val1 + val2;
         case '-': return val1 - val2;
         case '*': return val1 * val2;
-        case '/': if (val2 == 0) { *success = false; return 0; } return val1 / val2;
-        default: *success = false; return 0;
+        case '/': 
+            if (val2 == 0) { *success = false; return 0; }
+            return val1 / val2;
+        default:
+            *success = false;
+            return 0;
     }
 }
+
 
 
 
