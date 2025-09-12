@@ -259,61 +259,25 @@ static int32_t eval(int p, int q, bool *success) {
     int level = 0;
 	
 	  // Operator precedence from lowest to highest: OR > AND > EQ/NEQ > < <= > >= > + - > * /
-    // 4.1 OR
-    int i; 
-    for (i = q; i >= p; i--) {
-        if (tokens[i].type == ')') level++;
-        else if (tokens[i].type == '(') level--;
-        else if (level == 0 && tokens[i].type == OR) { op = i; break; }
-    }
-    // 4.2 AND
-    if (op == -1) {
+     int precedence[][2] = {
+        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
+    };
+    int pri;
+    for (pri = 0; pri < 6; pri++) {
         level = 0;
+        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
-            else if (level == 0 && tokens[i].type == AND) { op = i; break; }
+            else if (level == 0) {
+                if (tokens[i].type == precedence[pri][0] || tokens[i].type == precedence[pri][1]) {
+                    op = i;
+                    break;
+                }
+            }
         }
+        if (op != -1) break;
     }
-    // 4.3 EQ/NEQ
-    if (op == -1) {
-        level = 0;
-        for (i = q; i >= p; i--) {
-            if (tokens[i].type == ')') level++;
-            else if (tokens[i].type == '(') level--;
-            else if (level == 0 && (tokens[i].type == EQ || tokens[i].type == NEQ)) { op = i; break; }
-        }
-    }
-    // 4.4 < <= > >=
-    if (op == -1) {
-        level = 0;
-        for (i = q; i >= p; i--) {
-            if (tokens[i].type == ')') level++;
-            else if (tokens[i].type == '(') level--;
-            else if (level == 0 &&
-                     (tokens[i].type == LT || tokens[i].type == LE ||
-                      tokens[i].type == GT || tokens[i].type == GE)) { op = i; break; }
-        }
-    }
-    // 4.5 + -
-    if (op == -1) {
-        level = 0;
-        for (i = q; i >= p; i--) {
-            if (tokens[i].type == ')') level++;
-            else if (tokens[i].type == '(') level--;
-            else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) { op = i; break; }
-        }
-    }
-    // 4.6 * /
-    if (op == -1) {
-        level = 0;
-        for (i = q; i >= p; i--) {
-            if (tokens[i].type == ')') level++;
-            else if (tokens[i].type == '(') level--;
-            else if (level == 0 && (tokens[i].type == '*' || tokens[i].type == '/')) { op = i; break; }
-        }
-    }
-
 	if (op == -1) { *success = false; return 0; }
 
 	 // 5. Recursively evaluate left and right subexpressions
