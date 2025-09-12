@@ -12,9 +12,13 @@
 #include <stdio.h>
 enum {
 	NOTYPE = 256, 
-	EQ, // "==" (provided in the framework, can ignore for now)
+	EQ, NEQ, // "==" (provided in the framework, can ignore for now)
+    AND, OR,
+    LT, GT, LE, GE,
     NUM,   // number (decimal or hex)
-    REG    // register
+    REG,    // register
+    DEREF,     // unary * (memory dereference)
+    NOT        // logical !
 
 	/* TODO: Add more token types */
 
@@ -30,11 +34,17 @@ static struct rule {
 	 */
 
 	{" +",	NOTYPE},				// spaces
+    {"\\|\\|", OR},                 /* === Added: logical OR === */
+    {"&&", AND},                    /* === Added: logical AND === */
 	{"\\+", '+'},					// plus
 	{"\\-", '-'},                   // minus
 	{"\\*", '*'},                   // multiply
     {"\\/", '/'},                   // divide
     {"==", EQ},                     // equal
+    {"!=", NEQ},                    /* === Added: not equal === */
+    {"<=", LE}, {">=", GE},         /* === Added: <= >= === */
+    {"<",  LT}, {">",  GT},         /* === Added: <  > === */
+    {"!",  NOT},                    /* === Added: logical NOT === */
     {"0[xX][0-9a-fA-F]+", NUM},  // hex number
     {"[0-9]+", NUM},              // decimal number
     {"\\$[a-z]+", REG},        // registers
@@ -84,6 +94,21 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
     else if(strcmp(reg, "$edi")==0) *val = cpu.edi;
     else return false;
     return true;
+}
+
+/* === Added: mark * as DEREF when it is unary === */
+static void mark_deref() {
+    int i;
+    for (i = 0; i < nr_token; i++) {
+        if (tokens[i].type == '*') {
+            if (i == 0 ||
+                (tokens[i-1].type != NUM &&
+                 tokens[i-1].type != REG &&
+                 tokens[i-1].type != ')')) {
+                tokens[i].type = DEREF;
+            }
+        }
+    }
 }
 
 static bool make_token(char *e) {
@@ -148,7 +173,7 @@ static bool make_token(char *e) {
 			return false;
 		}
 	}
-
+    mark_deref(); /* === Added: must run after tokenization === */
 	return true; 
 }
 
@@ -192,39 +217,82 @@ static int32_t eval(int p, int q, bool *success) {
         return eval(p + 1, q - 1, success);
     }
 	  
-	// 3. Handle unary operator at the beginning
-    if (tokens[p].type == '-' || tokens[p].type == '+') {
+	 /* handle unary operators */
+    if (tokens[p].type == NOT) {
         int32_t val = eval(p + 1, q, success);
-        if (!*success) return 0;
-        return tokens[p].type == '-' ? -val : val;
+        return !val;
+    }
+    if (tokens[p].type == '-' &&
+        (p == 0 || tokens[p-1].type == '(')) {
+        int32_t val = eval(p + 1, q, success);
+        return -val;
+    }
+    if (tokens[p].type == DEREF) {
+        int32_t addr = eval(p + 1, q, success);
+        return swaddr_read(addr, 4);
     }
 
 	// 4. Find main operator at the outermost level
     int op = -1;
     int level = 0;
 	
-	// Pass 1: look for '+' or '-' (lowest precedence)
-		int i;
-		for (i = q; i >= p; i--) {// right-to-left for correct associativity
-			 if (tokens[i].type == ')') level++;
+	 /* OR */
+     int i;
+    for (i = q; i >= p; i--) {
+        if (tokens[i].type == ')') level++;
         else if (tokens[i].type == '(') level--;
-        else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) {
-            op = i; 
-			break;
-        }
+        else if (level == 0 && tokens[i].type == OR) { op = i; break; }
     }
-
-	// Pass 2: if not found, look for '*' or '/' (higher precedence)
+    /* AND */
     if (op == -1) {
         level = 0;
-		int i;
+        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
-            else if (level == 0 && (tokens[i].type == '*' || tokens[i].type == '/')) {
-                op = i;
-                break;
-            }
+            else if (level == 0 && tokens[i].type == AND) { op = i; break; }
+        }
+    }
+    /* EQ/NEQ */
+    if (op == -1) {
+        level = 0;
+        int i;  
+        for (i = q; i >= p; i--) {
+            if (tokens[i].type == ')') level++;
+            else if (tokens[i].type == '(') level--;
+            else if (level == 0 && (tokens[i].type == EQ || tokens[i].type == NEQ)) { op = i; break; }
+        }
+    }
+    /* < <= > >= */
+    if (op == -1) {
+        level = 0;
+        int i;  
+        for (i = q; i >= p; i--) {
+            if (tokens[i].type == ')') level++;
+            else if (tokens[i].type == '(') level--;
+            else if (level == 0 &&
+                     (tokens[i].type == LT || tokens[i].type == LE ||
+                      tokens[i].type == GT || tokens[i].type == GE)) { op = i; break; }
+        }
+    }
+    /* + - */
+    if (op == -1) {
+        level = 0;
+        int i;  
+        for (i = q; i >= p; i--) {
+            if (tokens[i].type == ')') level++;
+            else if (tokens[i].type == '(') level--;
+            else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) { op = i; break; }
+        }
+    }
+    /* * / */
+    if (op == -1) {
+        level = 0;
+        int i;
+        for (i = q; i >= p; i--) {
+            if (tokens[i].type == ')') level++;
+            else if (tokens[i].type == '(') level--;
+            else if (level == 0 && (tokens[i].type == '*' || tokens[i].type == '/')) { op = i; break; }
         }
     }
 
@@ -238,17 +306,22 @@ static int32_t eval(int p, int q, bool *success) {
 
 	// 6. Apply the operator
 		switch (tokens[op].type) {
+        case OR:  return val1 || val2;
+        case AND: return val1 && val2;
+        case EQ:  return val1 == val2;
+        case NEQ: return val1 != val2;
+        case LT:  return val1 <  val2;
+        case LE:  return val1 <= val2;
+        case GT:  return val1 >  val2;
+        case GE:  return val1 >= val2;
         case '+': return val1 + val2;
         case '-': return val1 - val2;
         case '*': return val1 * val2;
-        case '/': 
-            if (val2 == 0) { *success = false; return 0; }
-            return val1 / val2;
-        default:
-            *success = false;
-            return 0;
+        case '/': if (val2 == 0) { *success = false; return 0; } return val1 / val2;
+        default:  *success = false; return 0;
     }
 }
+
 
 
 int32_t expr(char *e, bool *success) {
@@ -295,27 +368,34 @@ static void print_tokens() {
 // Run some test expressions
 void test_expr() {
     const char *tests[] = {
-        "1+2",
-        "10-3",
-        "2*3+4",
-        "(1+2)*(3-4)",
-        "0x10+5",
-        "$eax+1",   // test register (assuming cpu.eax initialized)
-        "-5 + 3",
-        "(-2)*4",
-        "3 + 4 * 2 / (1 - 5)",
+        "1+2",                  // basic addition
+        "10-3",                 // subtraction
+        "2*3+4",                // mixed * and +
+        "(1+2)*(3-4)",          // parentheses
+        "0x10+5",               // hex + decimal
+        "$eax+1",               // register test (cpu.eax must be initialized)
+        "-5 + 3",               // unary minus
+        "(-2)*4",               // negative number multiply
+        "3 + 4 * 2 / (1 - 5)",  // precedence
+        "1 == 1",               // equality
+        "1 && 0",               // logical AND
+        "1 || 0",               // logical OR
+        "!0",                   // logical NOT
+        "*0x100",               // memory dereference (assumes mem_read implemented)
         NULL
     };
 		int i;
     for (i = 0; tests[i] != NULL; i++) {
         bool success = true;
-        printf("\n==== Test %d: \"%s\" ====\n", i+1, tests[i]);
+        printf("\n==== Test %d: \"%s\" ====\n", i + 1, tests[i]);
 
+        /* Evaluate the expression */
         int32_t result = expr((char *)tests[i], &success);
 
-        // Print tokens after parsing
+        /* Print tokens after parsing for debug */
         print_tokens();
 
+        /* Show evaluation result */
         if (success) {
             printf("Result = %d (0x%x)\n", result, result);
         } else {
