@@ -97,21 +97,24 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
     return true;
 }
 
-/* === Added: mark * as DEREF when it is unary === */
+/* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
-    int i; 
+    int i;
     for (i = 0; i < nr_token; i++) {
         if (tokens[i].type == '*') {
-            /* If '*' appears at the beginning of expression or after another
-               operator or after a left parenthesis, treat it as unary dereference. */
             if (i == 0 ||
-                (tokens[i-1].type != NUM && tokens[i-1].type != REG && tokens[i-1].type != ')')) {
+                tokens[i-1].type == '+'  || tokens[i-1].type == '-'  ||
+                tokens[i-1].type == '*'  || tokens[i-1].type == '/'  ||
+                tokens[i-1].type == '('  || tokens[i-1].type == AND  ||
+                tokens[i-1].type == OR   || tokens[i-1].type == EQ   ||
+                tokens[i-1].type == NEQ  || tokens[i-1].type == LT   ||
+                tokens[i-1].type == LE   || tokens[i-1].type == GT   ||
+                tokens[i-1].type == GE   || tokens[i-1].type == NOT) {
                 tokens[i].type = DEREF;
             }
         }
     }
 }
-
 static bool make_token(char *e) {
 	int position = 0;
 	regmatch_t pmatch;
