@@ -292,41 +292,30 @@ static int32_t eval(int p, int q, bool *success) {
         if (!*success) return 0;
         return swaddr_read(addr, 4);
     }
-
     if (tokens[p].type == '-' &&
         (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(')) {
-
-        int next_end = p + 1;
-        if (check_parentheses(p + 1, q)) {
-            next_end = q;
-        }
-
-        int32_t val = eval(p + 1, next_end, success);
+        int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return -val;
     }
-
     if (tokens[p].type == NOT) {
-        int next_end = p + 1;
-        if (check_parentheses(p + 1, q)) {
-            next_end = q;
-        }
-        int32_t val = eval(p + 1, next_end, success);
+        int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return !val;
     }
 
     // 4. Find main operator (lowest precedence at outermost level)
     int op = -1;
+    // precedence from low to high
     int precedence[][2] = {
-        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, GE}, {'+', '-'}, {'*', '/'}
+        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, LE}, {GT, GE}, {'+', '-'}, {'*', '/'}
     };
 
     int pri;
-    for (pri = 0; pri < 6; pri++) {
+    for (pri = 0; pri < 7; pri++) {
         int level = 0;
         int i;
-        for (i = q; i >= p; i--) {
+        for (i = q; i >= p; i--) { // right to left for left-associativity
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0) {
@@ -369,10 +358,6 @@ static int32_t eval(int p, int q, bool *success) {
             return 0;
     }
 }
-
-
-
-
 
 
 int32_t expr(char *e, bool *success) {
