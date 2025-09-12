@@ -252,11 +252,22 @@ static bool check_parentheses(int p, int q) {
 }
 
 
-/* Recursive evaluation */
-static bool is_unary(int type) {
-    return type == DEREF || type == NOT || type == '-';
+
+// Check if a token type is a binary operator
+static bool is_operator(int type) {
+    switch (type) {
+        case '+': case '-': case '*': case '/':
+        case AND: case OR:
+        case EQ: case NEQ:
+        case LT: case LE: case GT: case GE:
+            return true;
+        default:
+            return false;
+    }
 }
 
+
+/* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
     int i;
 
@@ -280,30 +291,32 @@ static int32_t eval(int p, int q, bool *success) {
     }
 
     // 2. Strip parentheses
-    if (check_parentheses(p, q)) {
-        return eval(p + 1, q - 1, success);
-    }
-
-    // 3. Unary operators
+    // Handle unary operators: DEREF, NOT, unary minus
     if (tokens[p].type == DEREF) {
+        // *expr
         int32_t addr = eval(p + 1, q, success);
         if (!*success) return 0;
         return swaddr_read(addr, 4);
     }
 
-    if (tokens[p].type == '-') {
-        // unary minus if first token or preceded by operator/left paren
-        if (p == 0 || is_unary(tokens[p - 1].type) || tokens[p-1].type == '(') {
-            int32_t val = eval(p + 1, q, success);
-            if (!*success) return 0;
-            return -val;
-        }
-    }
-
     if (tokens[p].type == NOT) {
+        // !expr
         int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return !val;
+    }
+
+    if (tokens[p].type == '-') {
+        // unary minus only applies to next single token or parentheses
+        if (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(') {
+            int end = p + 1;
+            if (check_parentheses(p + 1, q)) {
+                end = q;  // strip parentheses
+            }
+            int32_t val = eval(p + 1, end, success);
+            if (!*success) return 0;
+            return -val;
+        }
     }
 
     // 4. Find main operator (lowest precedence) ignoring unary operators
