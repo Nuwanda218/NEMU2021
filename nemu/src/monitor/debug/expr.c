@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "memory/memory.h"  
 enum {
 	NOTYPE = 256, 
 	EQ, NEQ, // "==" (provided in the framework, can ignore for now)
@@ -98,13 +99,13 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 
 /* === Added: mark * as DEREF when it is unary === */
 static void mark_deref() {
-    int i;
+    int i; 
     for (i = 0; i < nr_token; i++) {
         if (tokens[i].type == '*') {
+            /* If '*' appears at the beginning of expression or after another
+               operator or after a left parenthesis, treat it as unary dereference. */
             if (i == 0 ||
-                (tokens[i-1].type != NUM &&
-                 tokens[i-1].type != REG &&
-                 tokens[i-1].type != ')')) {
+                (tokens[i-1].type != NUM && tokens[i-1].type != REG && tokens[i-1].type != ')')) {
                 tokens[i].type = DEREF;
             }
         }
@@ -134,25 +135,34 @@ static bool make_token(char *e) {
 				 * of tokens, some extra actions should be performed.
 				 */
 
+                  /* bounds checks */
+                if (substr_len >= (int)sizeof(tokens[0].str)) {
+                    printf("token too long at position %d: \"%.*s\"\n", position - substr_len, substr_len, substr_start);
+                    return false;
+                }
+                if (nr_token >= (int)(sizeof(tokens) / sizeof(tokens[0]))) {
+                    printf("too many tokens (increase tokens[] size)\n");
+                    return false;
+                }
+
 				switch(rules[i].token_type) {
     				case NOTYPE:
         				// Ignore spaces
         				break;
-                    case AND:        // &&
-                    case OR:         // ||
-                    case EQ:         // ==
-                    case NEQ:        // !=
-                    case LT:         // <
-                    case GT:         // >
-                    case LE:         // <=
-                    case GE:         // >=    
-    				case '+': case '-': case '*': case '/': case '(': case ')':
+                    /* logical/relational operators */
+                    case AND: case OR:
+                    case EQ: case NEQ:
+                    case LT: case GT: case LE: case GE:
+                    /* arithmetic and parentheses and logical NOT */
+                    case '+': case '-': case '*': case '/':
+                    case '(': case ')':
                     case '!':
                         tokens[nr_token].type = rules[i].token_type;
                         strncpy(tokens[nr_token].str, substr_start, substr_len);
                         tokens[nr_token].str[substr_len] = '\0';
                         nr_token++;
                         break;
+
     				case NUM:
                         // Decimal or hex number
         				tokens[nr_token].type = NUM;  
@@ -160,6 +170,7 @@ static bool make_token(char *e) {
         				tokens[nr_token].str[substr_len] = '\0';
         				nr_token++;
         				break;
+
     				case REG:
                         // Register
 						tokens[nr_token].type = REG;
@@ -167,9 +178,12 @@ static bool make_token(char *e) {
    					 	tokens[nr_token].str[substr_len] = '\0';
     					nr_token++;
    						break;
+
     				default:
-        				panic("Unknown token type in make_token");
-	  }
+                        /* Defensive logging before panic to ease debugging */
+                        printf("Unknown token type %d matched for \"%.*s\"\n", rules[i].token_type, substr_len, substr_start);
+                        panic("Unknown token type in make_token");
+                }
 
 
 				break;// Once matched, break the for-loop
@@ -244,37 +258,35 @@ static int32_t eval(int p, int q, bool *success) {
     int op = -1;
     int level = 0;
 	
-	 /* OR */
-     int i;
+	  // Operator precedence from lowest to highest: OR > AND > EQ/NEQ > < <= > >= > + - > * /
+    // 4.1 OR
+    int i; 
     for (i = q; i >= p; i--) {
         if (tokens[i].type == ')') level++;
         else if (tokens[i].type == '(') level--;
         else if (level == 0 && tokens[i].type == OR) { op = i; break; }
     }
-    /* AND */
+    // 4.2 AND
     if (op == -1) {
         level = 0;
-        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0 && tokens[i].type == AND) { op = i; break; }
         }
     }
-    /* EQ/NEQ */
+    // 4.3 EQ/NEQ
     if (op == -1) {
         level = 0;
-        int i;  
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0 && (tokens[i].type == EQ || tokens[i].type == NEQ)) { op = i; break; }
         }
     }
-    /* < <= > >= */
+    // 4.4 < <= > >=
     if (op == -1) {
         level = 0;
-        int i;  
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
@@ -283,20 +295,18 @@ static int32_t eval(int p, int q, bool *success) {
                       tokens[i].type == GT || tokens[i].type == GE)) { op = i; break; }
         }
     }
-    /* + - */
+    // 4.5 + -
     if (op == -1) {
         level = 0;
-        int i;  
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
             else if (level == 0 && (tokens[i].type == '+' || tokens[i].type == '-')) { op = i; break; }
         }
     }
-    /* * / */
+    // 4.6 * /
     if (op == -1) {
         level = 0;
-        int i;
         for (i = q; i >= p; i--) {
             if (tokens[i].type == ')') level++;
             else if (tokens[i].type == '(') level--;
@@ -312,8 +322,8 @@ static int32_t eval(int p, int q, bool *success) {
     int32_t val2 = eval(op + 1, q, success);
     if (!*success) return 0;
 
-	// 6. Apply the operator
-		switch (tokens[op].type) {
+	 // 6. Apply the operator
+    switch (tokens[op].type) {
         case OR:  return val1 || val2;
         case AND: return val1 && val2;
         case EQ:  return val1 == val2;
@@ -325,8 +335,12 @@ static int32_t eval(int p, int q, bool *success) {
         case '+': return val1 + val2;
         case '-': return val1 - val2;
         case '*': return val1 * val2;
-        case '/': if (val2 == 0) { *success = false; return 0; } return val1 / val2;
-        default:  *success = false; return 0;
+        case '/': 
+            if (val2 == 0) { *success = false; return 0; }
+            return val1 / val2;
+        default:
+            *success = false;
+            return 0;
     }
 }
 
