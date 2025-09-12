@@ -306,18 +306,21 @@ static int32_t eval(int p, int q, bool *success) {
         return !val;
     }
 
-    if (tokens[p].type == '-') {
-        // unary minus only applies to next single token or parentheses
-        if (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(') {
-            int end = p + 1;
-            if (check_parentheses(p + 1, q)) {
-                end = q;  // strip parentheses
-            }
-            int32_t val = eval(p + 1, end, success);
-            if (!*success) return 0;
-            return -val;
-        }
+    if (tokens[p].type == '-' &&
+    (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(')) {
+
+        // unary minus
+    int next_end = p + 1;
+    if (check_parentheses(p + 1, q)) {
+        next_end = q;       
     }
+
+    int32_t val = eval(p + 1, next_end, success);
+    if (!*success) return 0;
+
+    return -val;
+}
+
 
     // 4. Find main operator (lowest precedence) ignoring unary operators
     int op = -1;
