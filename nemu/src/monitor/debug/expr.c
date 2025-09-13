@@ -52,6 +52,8 @@ static struct rule {
     {"\\/",     '/'},               // division
 
     // Numbers and registers
+    {"-?0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
+    {"-[0-9]+", NUM},               // decimal number with leading '-'
     {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
     {"[0-9]+", NUM},                // decimal number
     {"\\$[a-z]+", REG},             // register name
@@ -134,45 +136,49 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 }
 
 
-/*static bool is_operator(int type) {
+static bool is_binary_op(int type) {
     return type == '+' || type == '-' || type == '*' || type == '/' ||
            type == AND || type == OR || type == EQ || type == NEQ ||
-           type == LT || type == LE || type == GT || type == GE;
-}*/
+           type == LT || type == LE || type == GT || type == GE ||
+           type == '(';
+}
 
 /* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
-    int i;  
+    int i;
     for (i = 0; i < nr_token; i++) {
-        if (tokens[i].type == '-' &&
-            (i == 0 || 
-             tokens[i - 1].type == '(' ||
-             tokens[i - 1].type == '+' ||
-             tokens[i - 1].type == '-' ||
-             tokens[i - 1].type == '*' ||
-             tokens[i - 1].type == '/' ||
-             tokens[i - 1].type == AND ||
-             tokens[i - 1].type == OR  ||
-             tokens[i - 1].type == EQ  || tokens[i - 1].type == NEQ ||
-             tokens[i - 1].type == LT  || tokens[i - 1].type == LE  ||
-             tokens[i - 1].type == GT  || tokens[i - 1].type == GE  )) {
-            tokens[i].type = NEG;     // mark unary minus
+        
+        if (tokens[i].type == '-') {
+            bool is_unary = false;
+
+            
+            if (i == 0 || is_binary_op(tokens[i - 1].type)) {
+                
+                if (i + 1 < nr_token && tokens[i + 1].type == NUM) {
+                    continue;  
+                }
+                is_unary = true;
+            }
+
+            if (is_unary) {
+                tokens[i].type = NEG;
+            }
         }
 
+       
         if (tokens[i].type == '*' &&
             (i == 0 ||
              tokens[i - 1].type == '(' ||
              tokens[i - 1].type == '+' || tokens[i - 1].type == '-' ||
-             tokens[i - 1].type == '*' || tokens[i - 1].type == '/' )) {
-            tokens[i].type = DEREF;   // mark dereference
+             tokens[i - 1].type == '*' || tokens[i - 1].type == '/')) {
+            tokens[i].type = DEREF;
         }
     }
+
     printf("after mark_deref: ");
-
-for (i = 0; i < nr_token; i++)
-    printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
-printf("\n");
-
+    for (i = 0; i < nr_token; i++)
+        printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
+    printf("\n");
 }
 
 
@@ -445,11 +451,10 @@ void test_expr() {
     swaddr_write(0x100, 4, 42);
 
     const char *tests[] = {
-        "*0x100",        
-        "*($eax)",       
-        "*($eax + 4)",   
-        "*0x100 + 10",   
-        "-*0x100",      
+        "-42",
+    "-0x100",
+    "-($eax + 4)",
+    "-*0x100",      
         NULL
     };
     int i;
