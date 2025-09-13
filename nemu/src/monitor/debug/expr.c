@@ -379,9 +379,6 @@ int32_t expr(char *e, bool *success) {
         return 0;
     }
 
-    // 2. Convert unary '-' to NEG and '*' to DEREF when appropriate
-    mark_deref();   // *** important: must be after make_token ***
-
     *success = true;
 
     // 3. If the expression has only one token, directly return its value
