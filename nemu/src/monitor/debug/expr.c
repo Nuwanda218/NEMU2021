@@ -32,6 +32,14 @@ static struct rule {
 } rules[] = {
     {" +",      NOTYPE},            // spaces
 
+    // Numbers and registers
+    {"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
+    {"-[0-9]+", NUM},               // decimal number with leading '-'
+    
+    {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
+    {"[0-9]+", NUM},                // decimal number
+    {"\\$[a-z]+", REG},             // register name
+
     // Multi-character logical / comparison operators (must be placed before single-char operators)
     {"\\|\\|",  OR},                // logical OR
     {"&&",      AND},               // logical AND
@@ -51,14 +59,7 @@ static struct rule {
     {"\\*",     '*'},               // multiplication (may later be converted to DEREF)
     {"\\/",     '/'},               // division
 
-    // Numbers and registers
-    {"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
-    {"-[0-9]+", NUM},               // decimal number with leading '-'
     
-    {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
-    {"[0-9]+", NUM},                // decimal number
-    {"\\$[a-z]+", REG},             // register name
-
     // Parentheses
     {"\\(",     '('},               // left parenthesis
     {"\\)",     ')'}                // right parenthesis
