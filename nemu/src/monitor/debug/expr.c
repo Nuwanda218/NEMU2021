@@ -134,27 +134,45 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 }
 
 
-static bool is_operator(int type) {
+/*static bool is_operator(int type) {
     return type == '+' || type == '-' || type == '*' || type == '/' ||
            type == AND || type == OR || type == EQ || type == NEQ ||
            type == LT || type == LE || type == GT || type == GE;
-}
+}*/
 
 /* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
-    int i;
+    int i;  
     for (i = 0; i < nr_token; i++) {
-        if (tokens[i].type == '*') {
-            if (i == 0 || is_operator(tokens[i-1].type) || tokens[i-1].type == '(') {
-                tokens[i].type = DEREF;
-            }
+        if (tokens[i].type == '-' &&
+            (i == 0 || 
+             tokens[i - 1].type == '(' ||
+             tokens[i - 1].type == '+' ||
+             tokens[i - 1].type == '-' ||
+             tokens[i - 1].type == '*' ||
+             tokens[i - 1].type == '/' ||
+             tokens[i - 1].type == AND ||
+             tokens[i - 1].type == OR  ||
+             tokens[i - 1].type == EQ  || tokens[i - 1].type == NEQ ||
+             tokens[i - 1].type == LT  || tokens[i - 1].type == LE  ||
+             tokens[i - 1].type == GT  || tokens[i - 1].type == GE  )) {
+            tokens[i].type = NEG;     // mark unary minus
         }
-        else if (tokens[i].type == '-') {           
-            if (i == 0 || is_operator(tokens[i-1].type) || tokens[i-1].type == '(') {
-                tokens[i].type = NEG;
-            }
+
+        if (tokens[i].type == '*' &&
+            (i == 0 ||
+             tokens[i - 1].type == '(' ||
+             tokens[i - 1].type == '+' || tokens[i - 1].type == '-' ||
+             tokens[i - 1].type == '*' || tokens[i - 1].type == '/' )) {
+            tokens[i].type = DEREF;   // mark dereference
         }
     }
+    printf("after mark_deref: ");
+
+for (i = 0; i < nr_token; i++)
+    printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
+printf("\n");
+
 }
 
 
