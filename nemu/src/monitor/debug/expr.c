@@ -138,45 +138,35 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 }
 
 
-static bool is_binary_op(int type) {
-    return type == '+' || type == '-' || type == '*' || type == '/' ||
-           type == AND || type == OR || type == EQ || type == NEQ ||
-           type == LT || type == LE || type == GT || type == GE ||
-           type == '(';
+/* 统一前置判断 */
+static bool can_precede_unary(int type) {
+    return type == '(' ||
+           type == '+' || type == '-' ||
+           type == '*' || type == '/' ||
+           type == NEG ||
+           type == AND || type == OR  ||
+           type == EQ  || type == NEQ ||
+           type == LT  || type == LE  ||
+           type == GT  || type == GE;
 }
 
-/* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        
+        /* 负号 */
         if (tokens[i].type == '-') {
-            bool is_unary = false;
-
-            
-            if (i == 0 || is_binary_op(tokens[i - 1].type)) {
-                
-                if (i + 1 < nr_token && tokens[i + 1].type == NUM) {
-                    continue;  
-                }
-                is_unary = true;
-            }
-
-            if (is_unary) {
+            if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
+                if (i + 1 < nr_token && tokens[i + 1].type == NUM)
+                    continue;          // 负数字面量，跳过
                 tokens[i].type = NEG;
             }
         }
-
-       
+        /* 解引用 */
         if (tokens[i].type == '*' &&
-            (i == 0 ||
-             tokens[i - 1].type == '(' ||
-             tokens[i - 1].type == '+' || tokens[i - 1].type == '-' ||
-             tokens[i - 1].type == '*' || tokens[i - 1].type == '/')) {
+            (i == 0 || can_precede_unary(tokens[i - 1].type))) {
             tokens[i].type = DEREF;
         }
     }
-
     printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
