@@ -19,39 +19,48 @@ enum {
     NUM,   // number (decimal or hex)
     REG,    // register
     DEREF,     // unary * (memory dereference)
-    NOT        // logical !
+    NOT,       // logical !
+    NEG       // unary minus
 
 	/* TODO: Add more token types */
 
 };
 
 static struct rule {
-	char *regex;
-	int token_type;
+    char *regex;
+    int token_type;
 } rules[] = {
+    {" +",      NOTYPE},            // spaces
 
-	/* TODO: Add more rules.
-	 * Pay attention to the precedence level of different rules.
-	 */
+    // Multi-character logical / comparison operators (must be placed before single-char operators)
+    {"\\|\\|",  OR},                // logical OR
+    {"&&",      AND},               // logical AND
+    {"==",      EQ},                // equal
+    {"!=",      NEQ},               // not equal
+    {"<=",      LE},                // less than or equal
+    {">=",      GE},                // greater than or equal
 
-	{" +",	NOTYPE},				// spaces
-    {"\\|\\|", OR},                 /* === Added: logical OR === */
-    {"&&", AND},                    /* === Added: logical AND === */
-	{"\\+", '+'},					// plus
-	{"\\-", '-'},                   // minus
-	{"\\*", '*'},                   // multiply
-    {"\\/", '/'},                   // divide
-    {"==", EQ},                     // equal
-    {"!=", NEQ},                    /* === Added: not equal === */
-    {"<=", LE}, {">=", GE},         /* === Added: <= >= === */
-    {"<",  LT}, {">",  GT},         /* === Added: <  > === */
-    {"!",  NOT},                    /* === Added: logical NOT === */
-    {"0[xX][0-9a-fA-F]+", NUM},  // hex number
-    {"[0-9]+", NUM},              // decimal number
-    {"\\$[a-z]+", REG},        // registers
-    {"\\(", '('},                 // left parenthesis
-    {"\\)", ')'}                  // right parenthesis
+    // Single-character comparison or logical operators
+    {"<",       LT},                // less than
+    {">",       GT},                // greater than
+    {"!",       NOT},               // logical NOT
+
+    // Arithmetic operators
+    {"\\+",     '+'},               // addition
+    {"\\-",     '-'},               // subtraction (may later be converted to NEG)
+    {"\\*",     '*'},               // multiplication (may later be converted to DEREF)
+    {"\\/",     '/'},               // division
+
+    // Numbers and registers
+    {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
+    {"[0-9]+", NUM},                // decimal number
+    {"\\$[a-z]+", REG},             // register name
+
+    // Parentheses
+    {"\\(",     '('},               // left parenthesis
+    {"\\)",     ')'}                // right parenthesis
 };
+
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
 
@@ -258,82 +267,88 @@ static bool is_operator(int type) {
 
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
-    if (p > q) { *success = false; return 0; }
+    if (p > q) {                      // invalid range
+        *success = false;
+        return 0;
+    }
 
     // 1. Single token
     if (p == q) {
-        if (tokens[p].type == NUM) {
+        if (tokens[p].type == NUM) {   // numeric constant
             return (int32_t)strtol(tokens[p].str, NULL, 0);
-        } else if (tokens[p].type == REG) {
+        }
+        else if (tokens[p].type == REG) { // register value
             uint32_t val;
             if (!get_reg_val(tokens[p].str, &val)) {
                 *success = false;
                 return 0;
             }
             return (int32_t)val;
-        } else {
+        }
+        else {
             *success = false;
             return 0;
         }
     }
 
-    // 2. Parentheses
+    // 2. Expression wrapped by a pair of parentheses
     if (check_parentheses(p, q)) {
         return eval(p + 1, q - 1, success);
     }
 
-    // 3. Unary operators
-    if (tokens[p].type == DEREF) {
-        int32_t addr = eval(p + 1, q, success);
-        if (!*success) return 0;
-        return swaddr_read(addr, 4);
-    }
-    if (tokens[p].type == '-' &&
-        (p == 0 || is_operator(tokens[p-1].type) || tokens[p-1].type == '(')) {
+    // 3. Unary operators (already marked in lexical analysis)
+    if (tokens[p].type == NEG) {       // unary minus
         int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return -val;
     }
-    if (tokens[p].type == NOT) {
+    if (tokens[p].type == DEREF) {     // dereference
+        int32_t addr = eval(p + 1, q, success);
+        if (!*success) return 0;
+        return swaddr_read(addr, 4);
+    }
+    if (tokens[p].type == NOT) {       // logical NOT
         int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
         return !val;
     }
 
-    // 4. Find main operator (lowest precedence at outermost level)
+    // 4. Find the main operator with the lowest precedence outside parentheses
     int op = -1;
-    // precedence from low to high
-    int precedence[][2] = {
-        {OR, OR}, {AND, AND}, {EQ, NEQ}, {LT, LE}, {GT, GE}, {'+', '-'}, {'*', '/'}
-    };
+    int min_pri = 100;                 // smaller means lower precedence
+    int i, level;
+    for (i = p, level = 0; i <= q; i++) {
+        int t = tokens[i].type;
 
-    int pri;
-    for (pri = 0; pri < 7; pri++) {
-        int level = 0;
-        int i;
-        for (i = q; i >= p; i--) { // right to left for left-associativity
-            if (tokens[i].type == ')') level++;
-            else if (tokens[i].type == '(') level--;
-            else if (level == 0) {
-                if (tokens[i].type == precedence[pri][0] ||
-                    tokens[i].type == precedence[pri][1]) {
-                    op = i;
-                    break;
-                }
-            }
+        if (t == '(') { level++; continue; }
+        if (t == ')') { level--; continue; }
+        if (level > 0) continue;       // skip tokens inside parentheses
+
+        int pri = -1;
+        switch (t) {
+            case OR:  pri = 1; break;
+            case AND: pri = 2; break;
+            case EQ: case NEQ: pri = 3; break;
+            case LT: case LE: case GT: case GE: pri = 4; break;
+            case '+': case '-': pri = 5; break;
+            case '*': case '/': pri = 6; break;
+            default: break;
         }
-        if (op != -1) break;
+        if (pri > 0 && pri <= min_pri) {  // choose the rightmost operator of lowest precedence
+            min_pri = pri;
+            op = i;
+        }
     }
 
     if (op == -1) { *success = false; return 0; }
 
-    // 5. Evaluate left and right
+    // 5. Recursively evaluate left and right sub-expressions
     int32_t val1 = eval(p, op - 1, success);
     if (!*success) return 0;
     int32_t val2 = eval(op + 1, q, success);
     if (!*success) return 0;
 
-    // 6. Apply operator
+    // 6. Apply the operator
     switch (tokens[op].type) {
         case OR:  return val1 || val2;
         case AND: return val1 && val2;
@@ -346,7 +361,7 @@ static int32_t eval(int p, int q, bool *success) {
         case '+': return val1 + val2;
         case '-': return val1 - val2;
         case '*': return val1 * val2;
-        case '/': 
+        case '/':
             if (val2 == 0) { *success = false; return 0; }
             return val1 / val2;
         default:
