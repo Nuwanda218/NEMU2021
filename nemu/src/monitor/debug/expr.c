@@ -291,20 +291,18 @@ static int32_t eval(int p, int q, bool *success) {
         return 0;
     }
 
-    // 1. Single token
+    // 1. Single token (number or register)
     if (p == q) {
         if (tokens[p].type == NUM) {   // numeric constant
             return (int32_t)strtol(tokens[p].str, NULL, 0);
-        }
-        else if (tokens[p].type == REG) { // register value
+        } else if (tokens[p].type == REG) { // register value
             uint32_t val;
             if (!get_reg_val(tokens[p].str, &val)) {
                 *success = false;
                 return 0;
             }
             return (int32_t)val;
-        }
-        else {
+        } else {
             *success = false;
             return 0;
         }
@@ -315,7 +313,7 @@ static int32_t eval(int p, int q, bool *success) {
         return eval(p + 1, q - 1, success);
     }
 
-    // 3. Unary operators (already marked in lexical analysis)
+    // 3. Unary operators (marked during lexical analysis)
     if (tokens[p].type == NEG) {       // unary minus
         int32_t val = eval(p + 1, q, success);
         if (!*success) return 0;
@@ -332,16 +330,16 @@ static int32_t eval(int p, int q, bool *success) {
         return !val;
     }
 
-    // 4. Find the main operator with the lowest precedence outside parentheses
+    // 4. Find the main operator (lowest precedence) outside parentheses
     int op = -1;
-    int min_pri = 100;                 // smaller means lower precedence
-    int i, level;
+    int min_pri = 100; 
+    int i, level;          // smaller means lower precedence
     for (i = p, level = 0; i <= q; i++) {
         int t = tokens[i].type;
 
         if (t == '(') { level++; continue; }
         if (t == ')') { level--; continue; }
-        if (level > 0) continue;       // skip tokens inside parentheses
+        if (level > 0) continue;       // skip inside parentheses
 
         int pri = -1;
         switch (t) {
@@ -353,7 +351,10 @@ static int32_t eval(int p, int q, bool *success) {
             case '*': case '/': pri = 6; break;
             default: break;
         }
-        if (pri > 0 && pri <= min_pri) {  // choose the rightmost operator of lowest precedence
+
+        // **Skip unary operators so they are not treated as binary**
+        if (pri > 0 && pri <= min_pri &&
+            t != NEG && t != DEREF && t != NOT) {
             min_pri = pri;
             op = i;
         }
@@ -388,6 +389,7 @@ static int32_t eval(int p, int q, bool *success) {
             return 0;
     }
 }
+
 
 
 int32_t expr(char *e, bool *success) {
