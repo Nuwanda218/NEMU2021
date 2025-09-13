@@ -373,18 +373,22 @@ static int32_t eval(int p, int q, bool *success) {
 
 
 int32_t expr(char *e, bool *success) {
-	// 1. Tokenize the input expression
+    // 1. Tokenize the input expression into tokens
     if (!make_token(e)) {
         *success = false;
         return 0;
     }
 
+    // 2. Convert unary '-' to NEG and '*' to DEREF when appropriate
+    mark_deref();   // *** important: must be after make_token ***
+
     *success = true;
 
-	// 2. Handle single token (number or register)
+    // 3. If the expression has only one token, directly return its value
     if (nr_token == 1) {
         if (tokens[0].type == NUM) {
-            return (int32_t)strtol(tokens[0].str, NULL, 0);  // parse decimal or hex
+            // parse decimal or hex number
+            return (int32_t)strtol(tokens[0].str, NULL, 0);
         } else if (tokens[0].type == REG) {
             uint32_t val;
             if (!get_reg_val(tokens[0].str, &val)) {
@@ -392,15 +396,17 @@ int32_t expr(char *e, bool *success) {
                 return 0;
             }
             return (int32_t)val;
+        } else {
+            *success = false;
+            return 0;
         }
     }
-    
-	 // 3. Evaluate the full expression recursively
-    int32_t result = eval(0, nr_token - 1, success);
 
-	/* TODO: Insert codes to evaluate the expression. */
-	return result;
+    // 4. Evaluate the full expression recursively
+    int32_t result = eval(0, nr_token - 1, success);
+    return result;
 }
+
 
 // [PA1 stage2 mandatory task 3]
 // Run test cases for arithmetic expression lexical analysis
