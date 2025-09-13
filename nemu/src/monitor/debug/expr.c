@@ -134,7 +134,11 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 }
 
 
-static bool is_operator(int type);
+static bool is_operator(int type) {
+    return type == '+' || type == '-' || type == '*' || type == '/' ||
+           type == AND || type == OR || type == EQ || type == NEQ ||
+           type == LT || type == LE || type == GT || type == GE;
+}
 
 /* Mark '*' as DEREF if it is a unary operator (memory dereference) */
 static void mark_deref() {
@@ -145,8 +149,14 @@ static void mark_deref() {
                 tokens[i].type = DEREF;
             }
         }
+        else if (tokens[i].type == '-') {           
+            if (i == 0 || is_operator(tokens[i-1].type) || tokens[i-1].type == '(') {
+                tokens[i].type = NEG;
+            }
+        }
     }
 }
+
 
 
 static bool make_token(char *e) {
@@ -254,15 +264,6 @@ static bool check_parentheses(int p, int q) {
     return level == 0;
 }
 
-
-
-
-static bool is_operator(int type) {
-    return type == '+' || type == '-' || type == '*' || type == '/' ||
-           type == AND || type == OR || type == EQ || type == NEQ ||
-           type == LT || type == LE || type == GT || type == GE ||
-           type == DEREF || type == NOT;   
-}
 
 
 /* Recursive evaluation */
