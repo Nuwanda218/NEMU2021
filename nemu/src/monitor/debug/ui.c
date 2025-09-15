@@ -130,26 +130,7 @@ static int cmd_w(char *args) {
         printf("Usage: w EXPR\n");
         return 0;
     }
-
-    bool success = true;
-    // evaluate the expression once and store the initial value
-    int val = expr(args, &success);
-    if (!success) {
-        printf("Invalid expression: %s\n", args);
-        return 0;
-    }
-
-    WP *wp = new_wp();  // allocate a new watchpoint
-    if (!wp) return 0;
-
-    // copy expression and store initial value
-    strncpy(wp->expr, args, sizeof(wp->expr) - 1);
-    wp->expr[sizeof(wp->expr) - 1] = '\0';
-    wp->last_val = val;
-
-    printf("Watchpoint %d set on \"%s\", initial value = %d\n",
-           wp->NO, wp->expr, wp->last_val);
-
+    add_watchpoint(args);
     return 0;
 }
 
@@ -160,16 +141,7 @@ static int cmd_d(char *args) {
         return 0;
     }
     int no = atoi(args);
-    WP *wp = head;
-    while (wp != NULL) {
-        if (wp->NO == no) {
-            free_wp(wp);
-            printf("Watchpoint %d deleted.\n", no);
-            return 0;
-        }
-        wp = wp->next;
-    }
-    printf("No watchpoint number %d found.\n", no);
+    delete_watchpoint(no);
     return 0;
 }
 
@@ -187,8 +159,8 @@ static struct {
 	{ "info", "Display program status or watchpoints (usage: info r|w)", cmd_info },
 	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x },
 	{ "p", "Evaluate and print the value of an expression (usage: p EXPR)", cmd_p },
-	{ "w",    "Set a watchpoint (usage: w EXPR)", cmd_w },
-	{ "d",    "Delete a watchpoint by number (usage: d N)", cmd_d },
+	{ "w", "Set a watchpoint (usage: w EXPR)", cmd_w },
+	{ "d", "Delete a watchpoint by number (usage: d N)", cmd_d },
 
 	/* TODO: Add more commands */
 
