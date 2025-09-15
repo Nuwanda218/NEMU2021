@@ -139,11 +139,12 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 
 
 
+/* 统一前置判断 */
 static bool can_precede_unary(int type) {
     return type == '(' ||
            type == '+' || type == '-' ||
            type == '*' || type == '/' ||
-           type == NEG || type == DEREF ||
+           type == NEG ||
            type == AND || type == OR  ||
            type == EQ  || type == NEQ ||
            type == LT  || type == LE  ||
@@ -153,26 +154,31 @@ static bool can_precede_unary(int type) {
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-
+        /* 负号 */
         if (tokens[i].type == '-') {
             if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                tokens[i].type = NEG;  // mark as unary minus
+                if (i + 1 < nr_token && tokens[i + 1].type == NUM)
+                    continue;          // 负数字面量，跳过
+                tokens[i].type = NEG;
             }
         }
-
+        /* 解引用 */
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
-            tokens[i].type = DEREF; // mark as pointer dereference
+            tokens[i].type = DEREF;
         }
     }
-
+    printf("after mark_deref: ");
+    for (i = 0; i < nr_token; i++)
+        printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
+    printf("\n");
+}
     /* Debug print
     printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
     printf("\n");
     */
-}
 
 
 static bool make_token(char *e) {
