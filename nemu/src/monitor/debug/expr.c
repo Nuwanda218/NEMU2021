@@ -176,6 +176,32 @@ static void mark_unary_minus(void)
         }
     }
 }
+/* 二次修正：把 "-" + "NUM" 合并成负 NUM token */
+static void merge_unary_minus(void)
+{
+    int dst = 0; /* 写入指针 */
+    int src;     /* 读取指针 */
+    for (src = 0; src < nr_token; ++src) {
+        if (tokens[src].type == '-' &&
+            src + 1 < nr_token &&
+            tokens[src + 1].type == NUM &&
+            (src == 0 || can_precede_unary(tokens[src - 1].type)))
+        {
+            /* 合并成负数字 */
+            int val = -((int)strtol(tokens[src + 1].str, NULL, 0));
+            tokens[dst].type = NUM;
+            snprintf(tokens[dst].str, sizeof(tokens[0].str), "%d", val);
+            ++dst;
+            ++src; /* 跳过下一个 NUM */
+        }
+        else {
+            /* 原样保留 */
+            if (dst != src) tokens[dst] = tokens[src];
+            ++dst;
+        }
+    }
+    nr_token = dst;
+}
 /* ---------- 新增结束 ---------- */
 static void mark_deref(void)
 {
@@ -295,6 +321,7 @@ static bool make_token(char *e) {
 	}
     mark_deref(); /* === Added: must run after tokenization === */
     mark_unary_minus();           // 新增：把部分 '-' 改成 NEG
+    merge_unary_minus();       // 新增：把 "-" + "NUM" 合并成负 NUM token
 	return true; 
 }
 
