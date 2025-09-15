@@ -190,7 +190,7 @@ static bool make_token(char *e) {
 				char *substr_start = e + position;
 				int substr_len = pmatch.rm_eo;
 
-				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
+				//Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
 				position += substr_len;
 				matched = true;
 				/* TODO: Now a new token is recognized with rules[i]. Add codes
@@ -284,7 +284,7 @@ static bool check_parentheses(int p, int q) {
 
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
-    printf("[eval] enter: p=%d q=%d\n", p, q);
+    //printf("[eval] enter: p=%d q=%d\n", p, q);
     if (p > q) {
         printf("[eval] empty range\n");
         *success = false;
@@ -293,16 +293,16 @@ static int32_t eval(int p, int q, bool *success) {
 
     /* 1. 单 token */
     if (p == q) {
-        printf("[eval] single token: \"%s\"\n", tokens[p].str);
+        //printf("[eval] single token: \"%s\"\n", tokens[p].str);
         if (tokens[p].type == NUM) {
             int32_t v = (int32_t)strtol(tokens[p].str, NULL, 0);
-            printf("[eval] NUM -> %d (0x%x)\n", v, v);
+            //printf("[eval] NUM -> %d (0x%x)\n", v, v);
             return v;
         }
         if (tokens[p].type == REG) {
             uint32_t val;
             if (!get_reg_val(tokens[p].str, &val)) { *success=false; return 0; }
-            printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val);
+            //printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val);
             return (int32_t)val;
         }
         *success = false;
@@ -311,27 +311,27 @@ static int32_t eval(int p, int q, bool *success) {
 
     /* 2. 括号包裹 */
     if (check_parentheses(p, q)) {
-        printf("[eval] parentheses: %d-%d\n", p+1, q-1);
+        //printf("[eval] parentheses: %d-%d\n", p+1, q-1);
         return eval(p+1, q-1, success);
     }
 
     /* 3. 一元运算符 */
     if (tokens[p].type == NEG) {
-        printf("[eval] NEG on [%d,%d]\n", p+1, q);
+        //printf("[eval] NEG on [%d,%d]\n", p+1, q);
         int32_t v = eval(p+1, q, success);
         if (*success) //printf("[eval] NEG result = %d\n", -v);
         return -v;
     }
     if (tokens[p].type == DEREF) {
-        printf("[eval] DEREF on [%d,%d]\n", p+1, q);
+        //printf("[eval] DEREF on [%d,%d]\n", p+1, q);
         int32_t addr = eval(p+1, q, success);
         if (!*success) return 0;
         int32_t v = swaddr_read(addr, 4);
-        printf("[eval] DEREF 0x%x -> %d (0x%x)\n", addr, v, v);
+        //printf("[eval] DEREF 0x%x -> %d (0x%x)\n", addr, v, v);
         return v;
     }
     if (tokens[p].type == NOT) {
-        printf("[eval] NOT on [%d,%d]\n", p+1, q);
+        //printf("[eval] NOT on [%d,%d]\n", p+1, q);
         int32_t v = eval(p+1, q, success);
         if (*success) //printf("[eval] NOT result = %d\n", !v);
         return !v;
@@ -362,11 +362,11 @@ static int32_t eval(int p, int q, bool *success) {
         }
     }
     if (op == -1) {
-        printf("[eval] no binary op found -> fail\n");
+        //printf("[eval] no binary op found -> fail\n");
         *success = false;
         return 0;
     }
-    printf("[eval] binary op \"%s\" at %d\n", tokens[op].str, op);
+    //printf("[eval] binary op \"%s\" at %d\n", tokens[op].str, op);
 
     /* 5. 递归左右 */
     int32_t v1 = eval(p, op - 1, success);
@@ -383,7 +383,7 @@ static int32_t eval(int p, int q, bool *success) {
     case '/': if (v2 == 0) { *success = false; return 0; } res = v1 / v2; break;
     /* ... 其他运算符同理 ... */
     }
-    printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
+    //printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
     return res;
 }
 
@@ -425,16 +425,16 @@ int32_t expr(char *e, bool *success) {
 // [PA1 stage2 mandatory task 3]
 // Run test cases for arithmetic expression lexical analysis
 // Print all tokens of the current expression
-static void print_tokens() {
+/*static void print_tokens() {
     printf("Tokens:\n");
 	int i;
     for (i = 0; i < nr_token; i++) {
         printf("  %d: type=%d, str=\"%s\"\n", i, tokens[i].type, tokens[i].str);
     }
-}
+}*/
 
 // Run some test expressions
-void test_expr() {
+/*void test_expr() {
     
     cpu.eax = 0x100;
 
@@ -447,24 +447,24 @@ void test_expr() {
     "-($eax + 4)",
     "-*0x100",      
         NULL
-    };
-    int i;
+    };*/
+    /*int i;
     for (i = 0; tests[i] != NULL; i++) {
         bool success = true;
-        printf("\n==== Test %d: \"%s\" ====\n", i + 1, tests[i]);
+        printf("\n==== Test %d: \"%s\" ====\n", i + 1, tests[i]);*/
 
         /* Evaluate the expression */
-        int32_t result = expr((char *)tests[i], &success);
+        //int32_t result = expr((char *)tests[i], &success);
 
         /* Print tokens after parsing for debug */
-        print_tokens();
+       //print_tokens();
 
         /* Show evaluation result */
-        if (success) {
+       /*if (success) {
             printf("Result = %d (0x%x)\n", result, result);
         } else {
             printf("Evaluation failed!\n");
         }
     }
-}
+}*/
 

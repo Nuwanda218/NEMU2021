@@ -2,7 +2,7 @@ void init_monitor(int, char *[]);
 void reg_test();
 void restart();
 void ui_mainloop();
-void test_expr();  // [PA1 stage2 mandatory task 3]
+//void test_expr();  // [PA1 stage2 mandatory task 3]
 
 int main(int argc, char *argv[]) {
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 	ui_mainloop();
     // [PA1 stage2 mandatory task 3]
 	// Run test cases for arithmetic expression lexical analysis
-	test_expr();
+	//test_expr();
 
 
 
