@@ -138,8 +138,8 @@ bool check_watchpoints() {
 
         if (new_val != (int)wp->last_val) {
             printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, cpu.eip);
-            printf("Expression: %s\nOld value: %u\nNew value: %d\n",
-                   wp->expr, wp->last_val, new_val);
+            printf("Expression: %s\nOld value: %d\nNew value: %d\n",
+       		wp->expr, (int)wp->last_val, (int)new_val);
 
             wp->last_val = new_val;  
             nemu_state = STOP;
