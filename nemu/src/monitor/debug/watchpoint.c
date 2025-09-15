@@ -125,28 +125,29 @@ void info_watchpoints() {
 bool check_watchpoints() {
     WP *wp = head;
     bool success = true;
+    bool triggered = false;
 
-    printf("[DEBUG] Checking watchpoint %d: expr=%s, last_val=%u\n", wp->NO, wp->expr, wp->last_val);
     while (wp != NULL) {
-        uint32_t new_val = expr(wp->expr, &success);
+        int new_val = expr(wp->expr, &success);
         if (!success) {
-            printf("Failed to evaluate expression for watchpoint %d: %s\n", wp->NO, wp->expr);
+            printf("Fail to evaluate expression for watchpoint %d: %s\n",
+                   wp->NO, wp->expr);
             wp = wp->next;
             continue;
         }
 
-        if (new_val != wp->last_val) {
-            printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, (uint32_t)cpu.eip);
-            printf("Expression: %s\nOld value: %u\nNew value: %u\n",
-                   wp->expr, wp->last_val, new_val);
+        if (new_val != (int)wp->last_val) {
+            printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, cpu.eip);
+            printf("Expression: %s\nOld value: %d\nNew value: %d\n",
+       		wp->expr, (int)wp->last_val, (int)new_val);
 
-            wp->last_val = new_val;
+            wp->last_val = new_val;  
             nemu_state = STOP;
-            return true; 
+            triggered = true;
         }
         wp = wp->next;
     }
-    return false;
+    return triggered;
 }
 
 /* TODO: Implement the functionality of watchpoint */
