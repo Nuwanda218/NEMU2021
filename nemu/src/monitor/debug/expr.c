@@ -154,15 +154,15 @@ static bool can_precede_unary(int type) {
 
 
 /* ---------- 新增：区分负号与减号 ---------- */
-static bool is_binary_op(int type)
+/*static bool is_binary_op(int type)
 {
     return type == '+' || type == '-' || type == '*' || type == '/' ||
            type == AND || type == OR ||
            type == EQ || type == NEQ ||
            type == LT || type == LE || type == GT || type == GE;
-}
+}*/
 
-static void mark_unary_minus(void)
+/*static void mark_unary_minus(void)
 {
     int i;
     for (i = 0; i < nr_token; ++i) {
@@ -175,7 +175,7 @@ static void mark_unary_minus(void)
             }
         }
     }
-}
+}*/
 /* 二次修正：把 "-" + "NUM" 合并成负 NUM token */
 static void merge_unary_minus(void)
 {
@@ -214,7 +214,7 @@ static void mark_deref(void)
     }
 
     /* 2. 统一由 mark_unary_minus() 把 '-' → NEG */
-    mark_unary_minus();
+    //mark_unary_minus();
 
     /* 原有的 debug 打印 */
     printf("after mark_deref: ");
