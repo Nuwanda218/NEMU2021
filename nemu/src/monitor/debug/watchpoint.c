@@ -124,38 +124,30 @@ void info_watchpoints() {
 }
 
 /* Check all watchpoints after each instruction */
-bool check_watchpoints(void) {
+bool check_watchpoints() {
     WP *wp = head;
     bool success;
-    uint32_t new_val;
+    bool triggered = false;
 
     while (wp) {
-        new_val = expr(wp->expr, &success);
-        if (!success) {                 /* 表达式非法，直接删掉 */
-            printf("Fail to evaluate expression for watchpoint %d: %s\n",
-                   wp->NO, wp->expr);
-            WP *bad = wp;
+        int32_t new_val = expr(wp->expr, &success);
+        if (!success) {
+            printf("Fail to evaluate expression for watchpoint %d: %s\n", wp->NO, wp->expr);
             wp = wp->next;
-            delete_watchpoint(bad->NO);
             continue;
         }
 
-        /* 核心：只要值**变化**就触发，不限 0→1 */
         if (new_val != wp->last_val) {
-            /* 按 spec 打印一行 Hint */
-            printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, (uint32_t)cpu.eip);
-            /* 可选：把旧/新值也打出来，方便调试 */
-            printf("Expression: %s\nOld value: %u\nNew value: %u\n",
-                   wp->expr, wp->last_val, new_val);
-
-            wp->last_val = new_val;   /* 更新保存值 */
-            nemu_state = STOP;        /* 暂停 CPU */
-            return true;              /* 立即返回，避免同一条指令多个 WP 重复报 */
+            printf("Watchpoint %d triggered at 0x%08x\n", wp->NO, cpu.eip);
+            printf("Expr: %s\nOld: %d  New: %d\n", wp->expr, wp->last_val, new_val);
+            wp->last_val = new_val;
+            triggered = true;
         }
         wp = wp->next;
     }
-    return false;
+    return triggered;
 }
+
 /* TODO: Implement the functionality of watchpoint */
 
 
