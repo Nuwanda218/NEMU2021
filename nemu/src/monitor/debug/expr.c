@@ -153,40 +153,43 @@ static bool can_precede_unary(int type) {
 }
 
 
-/* -------------- 新增 -------------- */
-/* 判断当前 '-' 是否为 unary minus
- * 参数 i : 当前 '-' 在 tokens[] 中的下标
- * 返回 true -> 应标记为 NEG
- */
-static bool is_unary_minus(int i)
+/* ---------- 新增：区分负号与减号 ---------- */
+static bool is_binary_op(int type)
 {
-    if (i == 0) return true;                       // 表达式开头
-    int t = tokens[i - 1].type;
-    return t == '(' || t == NEG || t == NOT || t == DEREF ||
-           t == '+' || t == '-' || t == '*' || t == '/' ||
-           t == AND || t == OR || t == EQ || t == NEQ ||
-           t == LT || t == LE || t == GT || t == GE;
+    return type == '+' || type == '-' || type == '*' || type == '/' ||
+           type == AND || type == OR ||
+           type == EQ || type == NEQ ||
+           type == LT || type == LE || type == GT || type == GE;
 }
-/* -------------- 新增结束 -------------- */
 
-static void mark_deref(void)
+static void mark_unary_minus(void)
 {
     int i;
     for (i = 0; i < nr_token; ++i) {
-        /* 1. 先处理 '*' 的 dereference */
+        if (tokens[i].type == '-') {
+            if (i == 0 || is_binary_op(tokens[i-1].type) ||
+                tokens[i-1].type == '(' || tokens[i-1].type == NEG ||
+                tokens[i-1].type == NOT || tokens[i-1].type == DEREF)
+            {
+                tokens[i].type = NEG;
+            }
+        }
+    }
+}
+/* ---------- 新增结束 ---------- */
+static void mark_deref(void)
+{
+    /* 1. 仅处理 '*' → DEREF */
+    int i;
+    for (i = 0; i < nr_token; ++i) {
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
             tokens[i].type = DEREF;
-            continue;
-        }
-
-        /* 2. 再处理 '-' 的 unary minus */
-        if (tokens[i].type == '-') {
-            if (is_unary_minus(i))          // 用上面新增的函数判断
-                tokens[i].type = NEG;
-            /* 否则保持 '-' 不变，即为二元减号 */
         }
     }
+
+    /* 2. 统一由 mark_unary_minus() 把 '-' → NEG */
+    mark_unary_minus();
 
     /* 原有的 debug 打印 */
     printf("after mark_deref: ");
@@ -194,8 +197,6 @@ static void mark_deref(void)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
     printf("\n");
 }
-
-
 
     /* Debug print
     printf("after mark_deref: ");
@@ -293,6 +294,7 @@ static bool make_token(char *e) {
 		}
 	}
     mark_deref(); /* === Added: must run after tokenization === */
+    mark_unary_minus();           // 新增：把部分 '-' 改成 NEG
 	return true; 
 }
 
@@ -347,13 +349,12 @@ static int32_t eval(int p, int q, bool *success) {
 
 
     /* 4. 主运算符查找（binary operators） */
-    /* 4. 主运算符查找（binary operators） */
-    int op = -1, min_pri = 100, level = 0;
-    int i;
-    for (i = p; i <= q; ++i) {
+int op = -1, min_pri = 100, level = 0;
+int i;
+for (i = p; i <= q; ++i) {
     int t = tokens[i].type;
 
-    /* ---- 新增：跳过一元运算符 ---- */
+    /* ---- 跳过一元运算符 ---- */
     if (i == p && (t == NEG || t == NOT || t == DEREF))
         continue;
 
@@ -370,7 +371,7 @@ static int32_t eval(int p, int q, bool *success) {
         case '+': case '-': pri = 5; break;
         case '*': case '/': pri = 6; break;
     }
-    if (pri > 0 && pri <= min_pri) {   // 保证选的是最右最低优先级
+    if (pri > 0 && pri <= min_pri) {
         min_pri = pri;
         op = i;
     }
