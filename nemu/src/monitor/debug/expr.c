@@ -33,8 +33,8 @@ static struct rule {
     {" +",      NOTYPE},            // spaces
 
     // Numbers and registers
-    {"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
-    {"-[0-9]+", NUM},               // decimal number with leading '-'
+    //{"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
+    //{"-[0-9]+", NUM},               // decimal number with leading '-'
 
     {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
     {"[0-9]+", NUM},                // decimal number
@@ -348,14 +348,13 @@ static int32_t eval(int p, int q, bool *success) {
 }
 
 
-    /* 4. 主运算符查找（binary operators） */
-int op = -1, min_pri = 100, level = 0;
-int i;
+   /* 4. 主运算符查找（binary operators） */
+int op = -1, min_pri = 100, level = 0, i;
 for (i = p; i <= q; ++i) {
     int t = tokens[i].type;
 
-    /* ---- 跳过一元运算符 ---- */
-    if (i == p && (t == NEG || t == NOT || t == DEREF))
+    /* ---- 关键：无论在哪，只要是一元运算符就跳过 ---- */
+    if (t == NEG || t == DEREF || t == NOT)
         continue;
 
     if (t == '(') { level++; continue; }
