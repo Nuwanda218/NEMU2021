@@ -146,12 +146,12 @@ bool check_watchpoints() {
 
         // Trigger if value changed
         if (new_val != (int)wp->last_val) {
-            printf("\n>>> Watchpoint %d triggered at eip=0x%08x <<<\n", wp->NO, cpu.eip);
+            printf("\nHint watchpoint %d at address eip=0x%08x \n", wp->NO, cpu.eip);
             printf("Expression: %s\n", wp->expr);
             printf("Old value: %d (0x%x)\nNew value: %d (0x%x)\n",
                    wp->last_val, wp->last_val, new_val, new_val);
-            printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
-                   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);
+            /*printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
+                   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);*/
 
 
             wp->last_val = new_val;  // update last value
