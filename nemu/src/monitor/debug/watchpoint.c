@@ -126,41 +126,41 @@ void info_watchpoints() {
 /* Check all watchpoints after each instruction */
 bool check_watchpoints() {
     WP *wp = head;
-    bool success = true;
+    bool success;
     bool triggered = false;
 
     while (wp != NULL) {
+        success = true;
         int new_val = expr(wp->expr, &success);
+
+        // Debug info: eval result
         if (!success) {
-            printf("Fail to evaluate expression for watchpoint %d: %s\n",
-                   wp->NO, wp->expr);
+            printf("[WP%d] Failed to evaluate expression \"%s\"\n", wp->NO, wp->expr);
             wp = wp->next;
             continue;
         }
 
-        // Special handling for $eip equality (behave like a breakpoint)
-        if (strncmp(wp->expr, "$eip ==", 7) == 0) {
-            if (cpu.eip == (uint32_t)new_val) {
-                printf("Watchpoint %d triggered at eip = 0x%08x\n", wp->NO, cpu.eip);
-                nemu_state = STOP;
-                triggered = true;
-                wp = wp->next;
-                continue;
-            }
-        }
+        // Debug info: check current value vs last value
+        printf("[WP%d] Check at eip=0x%08x: expr=\"%s\" old=%d (0x%x), new=%d (0x%x)\n",
+               wp->NO, cpu.eip, wp->expr, wp->last_val, wp->last_val, new_val, new_val);
 
-        // Normal watchpoint: value change detection
+        // Trigger if value changed
         if (new_val != (int)wp->last_val) {
-            printf("Watchpoint %d triggered at eip = 0x%08x\n", wp->NO, cpu.eip);
-            printf("Expression: %s\nOld value: %d\nNew value: %d\n",
-                   wp->expr, (int)wp->last_val, (int)new_val);
+            printf("\n>>> Watchpoint %d triggered at eip=0x%08x <<<\n", wp->NO, cpu.eip);
+            printf("Expression: %s\n", wp->expr);
+            printf("Old value: %d (0x%x)\nNew value: %d (0x%x)\n",
+                   wp->last_val, wp->last_val, new_val, new_val);
+            printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
+                   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);
 
-            wp->last_val = new_val;  
-            nemu_state = STOP;
+            wp->last_val = new_val;  // update last value
+            nemu_state = STOP;        // stop CPU
             triggered = true;
         }
+
         wp = wp->next;
     }
+
     return triggered;
 }
 
