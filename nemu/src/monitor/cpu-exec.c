@@ -89,15 +89,15 @@ void cpu_exec(volatile uint32_t n) {
 					continue;
 				}
 				// 输出调试信息
-				printf("[WP%d] eip=0x%08x expr=\"%s\" old=%d new=%d\n",
-					   wp->NO, cpu.eip, wp->expr, wp->last_val, new_val);
+				/*printf("[WP%d] eip=0x%08x expr=\"%s\" old=%d new=%d\n",
+					   wp->NO, cpu.eip, wp->expr, wp->last_val, new_val);*/
 
 				if (new_val != (int)wp->last_val) {
-					printf("\n>>> Watchpoint %d triggered at eip=0x%08x <<<\n", wp->NO, cpu.eip);
+					printf("\nHint watchpoint %d at address eip=0x%08x \n", wp->NO, cpu.eip);
 					printf("Expression: %s\nOld value: %d\nNew value: %d\n",
 						   wp->expr, wp->last_val, new_val);
-					printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n\n",
-						   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);
+					/*printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n\n",
+						   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);*/
 
 					wp->last_val = new_val;  // 更新 last_val
 					nemu_state = STOP;        // 停止 CPU
