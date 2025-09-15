@@ -141,8 +141,8 @@ bool check_watchpoints() {
         }
 
         // Debug info: check current value vs last value
-        printf("[WP%d] Check at eip=0x%08x: expr=\"%s\" old=%d (0x%x), new=%d (0x%x)\n",
-               wp->NO, cpu.eip, wp->expr, wp->last_val, wp->last_val, new_val, new_val);
+        /*printf("[WP%d] Check at eip=0x%08x: expr=\"%s\" old=%d (0x%x), new=%d (0x%x)\n",
+               wp->NO, cpu.eip, wp->expr, wp->last_val, wp->last_val, new_val, new_val);*/
 
         // Trigger if value changed
         if (new_val != (int)wp->last_val) {
