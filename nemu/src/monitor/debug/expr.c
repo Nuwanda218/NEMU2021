@@ -325,26 +325,25 @@ static int32_t eval(int p, int q, bool *success) {
     }
 
     /* 3. 一元运算符 */
-    if (tokens[p].type == NEG) {
-        printf("[eval] NEG on [%d,%d]\n", p+1, q);
-        int32_t v = eval(p+1, q, success);
-        if (*success) //printf("[eval] NEG result = %d\n", -v);
-        return -v;
-    }
-    if (tokens[p].type == DEREF) {
-        printf("[eval] DEREF on [%d,%d]\n", p+1, q);
-        int32_t addr = eval(p+1, q, success);
-        if (!*success) return 0;
-        int32_t v = swaddr_read(addr, 4);
-        printf("[eval] DEREF 0x%x -> %d (0x%x)\n", addr, v, v);
-        return v;
-    }
-    if (tokens[p].type == NOT) {
-        printf("[eval] NOT on [%d,%d]\n", p+1, q);
-        int32_t v = eval(p+1, q, success);
-        if (*success) //printf("[eval] NOT result = %d\n", !v);
-        return !v;
-    }
+if (tokens[p].type == NEG) {
+    /* 只解析 **下一个** token 作为操作数 */
+    if (p + 1 > q) { *success = false; return 0; }
+    int32_t v = eval(p + 1, p + 1, success);   // 只取一个
+    if (!*success) return 0;
+    return -v;
+}
+if (tokens[p].type == DEREF) {
+    if (p + 1 > q) { *success = false; return 0; }
+    int32_t addr = eval(p + 1, p + 1, success);
+    if (!*success) return 0;
+    return swaddr_read(addr, 4);
+}
+if (tokens[p].type == NOT) {
+    if (p + 1 > q) { *success = false; return 0; }
+    int32_t v = eval(p + 1, p + 1, success);
+    if (!*success) return 0;
+    return !v;
+}
 
     /* 4. 找主运算符 */
     int op = -1, min_pri = 100, level = 0;
