@@ -158,23 +158,19 @@ static bool can_precede_unary(int type) {
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        // 负号处理
         if (tokens[i].type == '-') {
             if (i == 0) {
-                tokens[i].type = NEG;  // 表达式开头，必为负号
+                tokens[i].type = NEG;  // 开头负号
             } else {
-                int prev_type = tokens[i-1].type;
-                if (prev_type == NUM || prev_type == REG || prev_type == ')') {
-                    // 前一个是数字、寄存器或右括号，仍是减号
-                    // tokens[i].type 保持 '-' 不变
+                int prev = tokens[i-1].type;
+                if (prev == NUM || prev == REG || prev == ')') {
+                    // 二元减号，不改
                 } else {
-                    // 前一个是运算符或左括号，一元负号
-                    tokens[i].type = NEG;
+                    tokens[i].type = NEG; // 一元负号
                 }
             }
         }
 
-        // 解引用处理
         if (tokens[i].type == '*') {
             if (i == 0 || can_precede_unary(tokens[i-1].type)) {
                 tokens[i].type = DEREF;
@@ -182,12 +178,16 @@ static void mark_deref() {
         }
     }
 
-    // Debug print
+    // Debug 打印
     printf("after mark_deref: ");
-    for (i = 0; i < nr_token; i++)
-        printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
+    for (i = 0; i < nr_token; i++) {
+        if (tokens[i].type == NEG) printf("[%d:NEG:%s] ", i, tokens[i].str);
+        else if (tokens[i].type == DEREF) printf("[%d:DEREF:%s] ", i, tokens[i].str);
+        else printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
+    }
     printf("\n");
 }
+
 
 
     /* Debug print
