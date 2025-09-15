@@ -33,8 +33,8 @@ static struct rule {
     {" +",      NOTYPE},            // spaces
 
     // Numbers and registers
-    {"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
-    {"-[0-9]+", NUM},               // decimal number with leading '-'
+    //{"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
+    //{"-[0-9]+", NUM},               // decimal number with leading '-'
 
     {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
     {"[0-9]+", NUM},                // decimal number
