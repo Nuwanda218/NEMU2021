@@ -153,38 +153,45 @@ static bool can_precede_unary(int type) {
 }
 
 
+/* -------------- 新增 -------------- */
+/* 判断当前 '-' 是否为 unary minus
+ * 参数 i : 当前 '-' 在 tokens[] 中的下标
+ * 返回 true -> 应标记为 NEG
+ */
+static bool is_unary_minus(int i)
+{
+    if (i == 0) return true;                       // 表达式开头
+    int t = tokens[i - 1].type;
+    return t == '(' || t == NEG || t == NOT || t == DEREF ||
+           t == '+' || t == '-' || t == '*' || t == '/' ||
+           t == AND || t == OR || t == EQ || t == NEQ ||
+           t == LT || t == LE || t == GT || t == GE;
+}
+/* -------------- 新增结束 -------------- */
 
-/* 标记一元运算符（负号和解引用） */
-static void mark_deref() {
+static void mark_deref(void)
+{
     int i;
-    for (i = 0; i < nr_token; i++) {
+    for (i = 0; i < nr_token; ++i) {
+        /* 1. 先处理 '*' 的 dereference */
+        if (tokens[i].type == '*' &&
+            (i == 0 || can_precede_unary(tokens[i - 1].type))) {
+            tokens[i].type = DEREF;
+            continue;
+        }
+
+        /* 2. 再处理 '-' 的 unary minus */
         if (tokens[i].type == '-') {
-            if (i == 0) {
-                tokens[i].type = NEG;  // 开头负号
-            } else {
-                int prev = tokens[i-1].type;
-                if (prev == NUM || prev == REG || prev == ')') {
-                    // 二元减号，不改
-                } else {
-                    tokens[i].type = NEG; // 一元负号
-                }
-            }
-        }
-
-        if (tokens[i].type == '*') {
-            if (i == 0 || can_precede_unary(tokens[i-1].type)) {
-                tokens[i].type = DEREF;
-            }
+            if (is_unary_minus(i))          // 用上面新增的函数判断
+                tokens[i].type = NEG;
+            /* 否则保持 '-' 不变，即为二元减号 */
         }
     }
 
-    // Debug 打印
+    /* 原有的 debug 打印 */
     printf("after mark_deref: ");
-    for (i = 0; i < nr_token; i++) {
-        if (tokens[i].type == NEG) printf("[%d:NEG:%s] ", i, tokens[i].str);
-        else if (tokens[i].type == DEREF) printf("[%d:DEREF:%s] ", i, tokens[i].str);
-        else printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
-    }
+    for (i = 0; i < nr_token; i++)
+        printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
     printf("\n");
 }
 
