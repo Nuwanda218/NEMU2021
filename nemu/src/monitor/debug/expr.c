@@ -144,13 +144,13 @@ static bool can_precede_unary(int type) {
     return type == '(' ||
            type == '+' || type == '-' ||
            type == '*' || type == '/' ||
-           type == NEG ||
-           type == AND || type == OR  ||
-           type == EQ  || type == NEQ ||
-           type == LT  || type == LE  ||
-           type == GT  || type == GE;
+           type == NEG || type == NOT || type == DEREF ||
+           type == AND || type == OR ||
+           type == EQ || type == NEQ ||
+           type == LT || type == LE ||
+           type == GT || type == GE ||
+           type == NOTYPE; // 表达式开头
 }
-
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
