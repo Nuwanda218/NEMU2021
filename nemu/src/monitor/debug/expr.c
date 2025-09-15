@@ -179,24 +179,22 @@ static void mark_unary_minus(void)
 /* 二次修正：把 "-" + "NUM" 合并成负 NUM token */
 static void merge_unary_minus(void)
 {
-    printf("merge_unary_minus: entry, nr_token=%d\n", nr_token);
-    int dst = 0; /* 写入指针 */
-    int src;     /* 读取指针 */
+    int dst = 0, src;
     for (src = 0; src < nr_token; ++src) {
+        /* 情况 1：一元负号 + NUM */
         if (tokens[src].type == '-' &&
             src + 1 < nr_token &&
             tokens[src + 1].type == NUM &&
             (src == 0 || can_precede_unary(tokens[src - 1].type)))
         {
-            /* 合并成负数字 */
-            int val = -((int)strtol(tokens[src + 1].str, NULL, 0));
+            long val = strtol(tokens[src + 1].str, NULL, 0);
             tokens[dst].type = NUM;
-            snprintf(tokens[dst].str, sizeof(tokens[0].str), "%d", val);
+            snprintf(tokens[dst].str, sizeof(tokens[0].str), "%ld", -val);
+            ++src;               /* 跳过 NUM */
             ++dst;
-            ++src; /* 跳过下一个 NUM */
         }
+        /* 情况 2：普通 token，原样保留 */
         else {
-            /* 原样保留 */
             if (dst != src) tokens[dst] = tokens[src];
             ++dst;
         }
@@ -321,8 +319,13 @@ static bool make_token(char *e) {
 		}
 	}
     mark_deref(); /* === Added: must run after tokenization === */
-    mark_unary_minus();           // 新增：把部分 '-' 改成 NEG
     merge_unary_minus();       // 新增：把 "-" + "NUM" 合并成负 NUM token
+        /* ===== 打印 token 列表，方便调试 ===== */
+    printf("------- tokens after merge_unary_minus -------\n");
+    int i;
+    for (i = 0; i < nr_token; ++i)
+        printf("  [%d] type=%d, str=\"%s\"\n", i, tokens[i].type, tokens[i].str);
+    printf("---------------------------------------------\n");
 	return true; 
 }
 
