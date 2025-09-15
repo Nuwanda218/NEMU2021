@@ -62,7 +62,7 @@ void cpu_exec(volatile uint32_t n) {
 		 * instruction decode, and the actual execution. */
 
 		 /*************  1. 先检查监视点（指令尚未执行） *************/
-		if (check_watchpoints()) {          // 此时 cpu.eip 仍是本条地址
+		if (check_watchpoints() || nemu_state != RUNNING) {          // 此时 cpu.eip 仍是本条地址
 			nemu_state = STOP;              // 触发后立刻停
 			return;
 		}
