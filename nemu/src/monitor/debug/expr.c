@@ -321,56 +321,19 @@ static int32_t eval(int p, int q, bool *success)
         return eval(p + 1, q - 1, success);
     }
 
-    /* 3. 一元运算符：只结合「下一个初级单元」*/
-    if (tokens[p].type == NEG || tokens[p].type == DEREF || tokens[p].type == NOT) {
-        printf("[eval] %s on [%d,%d]\n",
-               tokens[p].type == NEG ? "NEG" :
-               tokens[p].type == DEREF ? "DEREF" : "NOT", p + 1, p + 1);
-        int32_t v = eval(p + 1, p + 1, success);
-        if (!*success) return 0;
+    /* 3. 一元运算符 */
+if (tokens[p].type == NEG || tokens[p].type == DEREF || tokens[p].type == NOT) {
+    int32_t v = eval(p + 1, q, success); 
+    if (!*success) return 0;
 
-        /* 应用一元操作 */
-        switch (tokens[p].type) {
+    switch (tokens[p].type) {
         case NEG:   v = -v; break;
         case DEREF: v = swaddr_read(v, 4); break;
         case NOT:   v = !v; break;
-        }
-
-        /* 后面还有表达式 → 左结合继续解析 */
-        if (p + 2 <= q) {
-            printf("[eval] %s result = %d, continue binary from %d\n",
-                   tokens[p].type == NEG ? "NEG" :
-                   tokens[p].type == DEREF ? "DEREF" : "NOT", v, p + 2);
-            int32_t rhs = eval(p + 2, q, success);
-            if (!*success) return 0;
-
-            /* 支持全部二元运算符（左结合）*/
-            switch (tokens[p + 1].type) {
-            case '+': printf("[eval] %d + %d -> %d\n", v, rhs, v + rhs); return v + rhs;
-            case '-': printf("[eval] %d - %d -> %d\n", v, rhs, v - rhs); return v - rhs;
-            case '*': printf("[eval] %d * %d -> %d\n", v, rhs, v * rhs); return v * rhs;
-            case '/':
-                if (rhs == 0) { *success = false; return 0; }
-                printf("[eval] %d / %d -> %d\n", v, rhs, v / rhs);
-                return v / rhs;
-            case EQ:  printf("[eval] %d == %d -> %d\n", v, rhs, v == rhs); return v == rhs;
-            case NEQ: printf("[eval] %d != %d -> %d\n", v, rhs, v != rhs); return v != rhs;
-            case LT:  printf("[eval] %d < %d -> %d\n", v, rhs, v < rhs);  return v < rhs;
-            case LE:  printf("[eval] %d <= %d -> %d\n", v, rhs, v <= rhs); return v <= rhs;
-            case GT:  printf("[eval] %d > %d -> %d\n", v, rhs, v > rhs);  return v > rhs;
-            case GE:  printf("[eval] %d >= %d -> %d\n", v, rhs, v >= rhs); return v >= rhs;
-            case AND: printf("[eval] %d && %d -> %d\n", v, rhs, v && rhs); return v && rhs;
-            case OR:  printf("[eval] %d || %d -> %d\n", v, rhs, v || rhs); return v || rhs;
-            default:
-                *success = false; return 0;
-            }
-        }
-        printf("[eval] %s result = %d\n",
-               tokens[p].type == NEG ? "NEG" :
-               tokens[p].type == DEREF ? "DEREF" : "NOT", v);
-        return v;
     }
 
+    return v;
+}
     /* 4. 找主运算符（二元）*/
     int op = -1, min_pri = 100, level = 0;
     int i;
