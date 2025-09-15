@@ -60,6 +60,13 @@ void cpu_exec(volatile uint32_t n) {
 
 		/* Execute one instruction, including instruction fetch,
 		 * instruction decode, and the actual execution. */
+
+		 /*************  1. 先检查监视点（指令尚未执行） *************/
+		if (check_watchpoints()) {          // 此时 cpu.eip 仍是本条地址
+			nemu_state = STOP;              // 触发后立刻停
+			return;
+		}
+
 		int instr_len = exec(cpu.eip);
 
 		cpu.eip += instr_len;
@@ -72,11 +79,6 @@ void cpu_exec(volatile uint32_t n) {
 			printf("%s\n", asm_buf);
 		}
 #endif
-		/* check watchpoints */
-		check_watchpoints();
-			if (nemu_state != RUNNING) {
-    			return;
-		}	
 
 
 		/* TODO: check watchpoints here. */
