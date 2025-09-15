@@ -153,30 +153,32 @@ static bool can_precede_unary(int type) {
 }
 
 
+
+/* 标记一元运算符（负号和解引用） */
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
         // 负号处理
         if (tokens[i].type == '-') {
             if (i == 0) {
-                // 表达式开头，必定为负号
-                tokens[i].type = NEG;
+                tokens[i].type = NEG;  // 表达式开头，必为负号
             } else {
-                int prev = tokens[i-1].type;
-                if (prev == NUM || prev == ')') {
-                    // 前一个是数字或右括号，减号
-                    // 保持 tokens[i].type = '-' 不变
+                int prev_type = tokens[i-1].type;
+                if (prev_type == NUM || prev_type == REG || prev_type == ')') {
+                    // 前一个是数字、寄存器或右括号，仍是减号
+                    // tokens[i].type 保持 '-' 不变
                 } else {
-                    // 前一个是其他运算符或左括号，负号
+                    // 前一个是运算符或左括号，一元负号
                     tokens[i].type = NEG;
                 }
             }
         }
 
         // 解引用处理
-        if (tokens[i].type == '*' &&
-            (i == 0 || can_precede_unary(tokens[i - 1].type))) {
-            tokens[i].type = DEREF;
+        if (tokens[i].type == '*') {
+            if (i == 0 || can_precede_unary(tokens[i-1].type)) {
+                tokens[i].type = DEREF;
+            }
         }
     }
 
@@ -327,14 +329,15 @@ static int32_t eval(int p, int q, bool *success) {
 
     /* 3. 一元运算 */
     if (tokens[p].type == NEG || tokens[p].type == DEREF || tokens[p].type == NOT) {
-        int32_t val = eval(p+1, q, success);  // 递归整个右侧表达式
-        if (!*success) return 0;
-        switch (tokens[p].type) {
-            case NEG: return -val;
-            case DEREF: return swaddr_read((uint32_t)val, 4);
-            case NOT: return !val;
-        }
+    int32_t val = eval(p+1, q, success);
+    if (!*success) return 0;
+    switch (tokens[p].type) {
+        case NEG: return -val;
+        case DEREF: return swaddr_read((uint32_t)val, 4);
+        case NOT: return !val;
     }
+}
+
 
     /* 4. 主运算符查找（binary operators） */
     int op = -1, min_pri = 100, level = 0;
