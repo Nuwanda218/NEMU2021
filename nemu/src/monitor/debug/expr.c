@@ -143,7 +143,7 @@ static bool can_precede_unary(int type) {
     return type == '(' ||
            type == '+' || type == '-' ||
            type == '*' || type == '/' ||
-           type == NEG ||
+           type == NEG || type == DEREF ||
            type == AND || type == OR  ||
            type == EQ  || type == NEQ ||
            type == LT  || type == LE  ||
@@ -153,26 +153,26 @@ static bool can_precede_unary(int type) {
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        
+
         if (tokens[i].type == '-') {
             if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                if (i + 1 < nr_token && tokens[i + 1].type == NUM)
-                    //continue;          
-                tokens[i].type = NEG;
+                tokens[i].type = NEG;  // mark as unary minus
             }
         }
-       
+
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
-            tokens[i].type = DEREF;
+            tokens[i].type = DEREF; // mark as pointer dereference
         }
     }
-    /*printf("after mark_deref: ");
+
+    /* Debug print
+    printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
-    printf("\n");*/
+    printf("\n");
+    */
 }
-
 
 
 static bool make_token(char *e) {
