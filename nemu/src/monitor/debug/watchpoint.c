@@ -126,27 +126,44 @@ void info_watchpoints() {
 /* Check all watchpoints after each instruction */
 bool check_watchpoints() {
     WP *wp = head;
-    bool success;
+    bool success = true;
     bool triggered = false;
 
-    while (wp) {
-        int32_t new_val = expr(wp->expr, &success);
+    while (wp != NULL) {
+        int new_val = expr(wp->expr, &success);
         if (!success) {
-            printf("Fail to evaluate expression for watchpoint %d: %s\n", wp->NO, wp->expr);
+            printf("Fail to evaluate expression for watchpoint %d: %s\n",
+                   wp->NO, wp->expr);
             wp = wp->next;
             continue;
         }
 
-        if (new_val != wp->last_val) {
-            printf("Watchpoint %d triggered at 0x%08x\n", wp->NO, cpu.eip);
-            printf("Expr: %s\nOld: %d  New: %d\n", wp->expr, wp->last_val, new_val);
-            wp->last_val = new_val;
+        // Special handling for $eip equality (behave like a breakpoint)
+        if (strncmp(wp->expr, "$eip ==", 7) == 0) {
+            if (cpu.eip == (uint32_t)new_val) {
+                printf("Watchpoint %d triggered at eip = 0x%08x\n", wp->NO, cpu.eip);
+                nemu_state = STOP;
+                triggered = true;
+                wp = wp->next;
+                continue;
+            }
+        }
+
+        // Normal watchpoint: value change detection
+        if (new_val != (int)wp->last_val) {
+            printf("Watchpoint %d triggered at eip = 0x%08x\n", wp->NO, cpu.eip);
+            printf("Expression: %s\nOld value: %d\nNew value: %d\n",
+                   wp->expr, (int)wp->last_val, (int)new_val);
+
+            wp->last_val = new_val;  
+            nemu_state = STOP;
             triggered = true;
         }
         wp = wp->next;
     }
     return triggered;
 }
+
 
 /* TODO: Implement the functionality of watchpoint */
 
