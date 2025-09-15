@@ -124,16 +124,14 @@ void info_watchpoints() {
 }
 
 /* Check all watchpoints after each instruction */
-bool check_watchpoints() {
+bool check_watchpoints(void) {
     WP *wp = head;
     bool success;
-    
-   
+    uint32_t new_val;
 
     while (wp) {
-        uint32_t new_val = expr(wp->expr, &success);
-         printf("[wp] wp%d expr=%s val=%u last=%u\n", wp->NO, wp->expr, new_val, wp->last_val);
-        if (!success) {
+        new_val = expr(wp->expr, &success);
+        if (!success) {                 /* 表达式非法，直接删掉 */
             printf("Fail to evaluate expression for watchpoint %d: %s\n",
                    wp->NO, wp->expr);
             WP *bad = wp;
@@ -142,27 +140,22 @@ bool check_watchpoints() {
             continue;
         }
 
-        /*  detect  0 -> 1  （表达式刚刚成立） */
-        if (new_val == 1 && wp->last_val == 0) {
-            printf("Hint watchpoint %d at address 0x%08x\n",
-                   wp->NO, (uint32_t)cpu.eip);   // 打印当前指令地址
-            wp->last_val = new_val;
+        /* 核心：只要值**变化**就触发，不限 0→1 */
+        if (new_val != wp->last_val) {
+            /* 按 spec 打印一行 Hint */
+            printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, (uint32_t)cpu.eip);
+            /* 可选：把旧/新值也打出来，方便调试 */
+            printf("Expression: %s\nOld value: %u\nNew value: %u\n",
+                   wp->expr, wp->last_val, new_val);
 
-            /* 一次性断点：触发即删除 */
-            WP *to_del = wp;
-            wp = wp->next;
-            delete_watchpoint(to_del->NO);
-            nemu_state = STOP;
-            return true;
+            wp->last_val = new_val;   /* 更新保存值 */
+            nemu_state = STOP;        /* 暂停 CPU */
+            return true;              /* 立即返回，避免同一条指令多个 WP 重复报 */
         }
-
-        /* 其它情况只更新值，不触发 */
-        wp->last_val = new_val;
         wp = wp->next;
     }
     return false;
 }
-
 /* TODO: Implement the functionality of watchpoint */
 
 
