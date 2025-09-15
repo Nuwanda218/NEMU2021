@@ -156,12 +156,15 @@ static void mark_deref() {
     for (i = 0; i < nr_token; i++) {
         /* 负号 */
         if (tokens[i].type == '-') {
-            if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                if (i + 1 < nr_token && tokens[i + 1].type == NUM)
-                    continue;          // 负数字面量，跳过
-                tokens[i].type = NEG;
-            }
+    if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
+        if (i + 1 < nr_token && tokens[i + 1].type == NUM) {
+            /* 负数字面量：把 **整个字符串** 保留为 NUM，但 **当前 token 仍需标成 NEG** */
+            tokens[i].type = NEG;
+            continue;
         }
+        tokens[i].type = NEG;
+    }
+}
         /* 解引用 */
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
