@@ -151,18 +151,29 @@ static bool can_precede_unary(int type) {
            type == GT || type == GE ||
            type == NOTYPE; // 表达式开头
 }
+
+
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        /* Unary minus */
+        // 负号处理
         if (tokens[i].type == '-') {
-        if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-        tokens[i].type = NEG;
-    }
-}
+            if (i == 0) {
+                // 表达式开头，必定为负号
+                tokens[i].type = NEG;
+            } else {
+                int prev = tokens[i-1].type;
+                if (prev == NUM || prev == ')') {
+                    // 前一个是数字或右括号，减号
+                    // 保持 tokens[i].type = '-' 不变
+                } else {
+                    // 前一个是其他运算符或左括号，负号
+                    tokens[i].type = NEG;
+                }
+            }
+        }
 
-
-        /* Unary dereference */
+        // 解引用处理
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
             tokens[i].type = DEREF;
