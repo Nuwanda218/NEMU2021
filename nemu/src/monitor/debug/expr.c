@@ -347,28 +347,34 @@ static int32_t eval(int p, int q, bool *success) {
 
 
     /* 4. 主运算符查找（binary operators） */
+    /* 4. 主运算符查找（binary operators） */
     int op = -1, min_pri = 100, level = 0;
     int i;
-    for (i = p; i <= q; i++) {
-        int t = tokens[i].type;
-        if (t == '(') { level++; continue; }
-        if (t == ')') { level--; continue; }
-        if (level > 0) continue;
+    for (i = p; i <= q; ++i) {
+    int t = tokens[i].type;
 
-        int pri = -1;
-        switch(t) {
-            case OR: pri = 1; break;
-            case AND: pri = 2; break;
-            case EQ: case NEQ: pri = 3; break;
-            case LT: case LE: case GT: case GE: pri = 4; break;
-            case '+': case '-': pri = 5; break;
-            case '*': case '/': pri = 6; break;
-        }
-        if (pri > 0 && pri <= min_pri && t != NEG && t != DEREF && t != NOT) {
-            min_pri = pri;
-            op = i;
-        }
+    /* ---- 新增：跳过一元运算符 ---- */
+    if (i == p && (t == NEG || t == NOT || t == DEREF))
+        continue;
+
+    if (t == '(') { level++; continue; }
+    if (t == ')') { level--; continue; }
+    if (level) continue;
+
+    int pri = -1;
+    switch (t) {
+        case OR: pri = 1; break;
+        case AND: pri = 2; break;
+        case EQ: case NEQ: pri = 3; break;
+        case LT: case LE: case GT: case GE: pri = 4; break;
+        case '+': case '-': pri = 5; break;
+        case '*': case '/': pri = 6; break;
     }
+    if (pri > 0 && pri <= min_pri) {   // 保证选的是最右最低优先级
+        min_pri = pri;
+        op = i;
+    }
+}
     if (op == -1) { *success = false; return 0; }
 
     int32_t v1 = eval(p, op-1, success);
