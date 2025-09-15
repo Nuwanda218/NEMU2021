@@ -150,21 +150,19 @@ static bool can_precede_unary(int type) {
            type == GT  || type == GE;
 }
 
-static void mark_deref() {
+static void mark_deref(void) {
     int i;
-    for (i = 0; i < nr_token; i++) {
-
-        if (tokens[i].type == '-') {
-            if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                tokens[i].type = NEG;  // mark as unary minus
-            }
+    for (i = 0; i < nr_token; ++i) {
+        if (tokens[i].type == '-' &&
+            (i == 0 || can_precede_unary(tokens[i - 1].type))) {
+            tokens[i].type = NEG;
         }
-
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
-            tokens[i].type = DEREF; // mark as pointer dereference
+            tokens[i].type = DEREF;
         }
     }
+}
 
     /* Debug print
     printf("after mark_deref: ");
@@ -172,7 +170,7 @@ static void mark_deref() {
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
     printf("\n");
     */
-}
+
 
 
 static bool make_token(char *e) {
@@ -283,59 +281,97 @@ static bool check_parentheses(int p, int q) {
 
 
 /* Recursive evaluation */
-static int32_t eval(int p, int q, bool *success) {
-    //printf("[eval] enter: p=%d q=%d\n", p, q);
+static int32_t eval(int p, int q, bool *success)
+{
+    printf("[eval] enter: p=%d q=%d\n", p, q);
     if (p > q) {
-        //printf("[eval] empty range\n");
+        printf("[eval] empty range\n");
         *success = false;
         return 0;
     }
 
     /* 1. 单 token */
     if (p == q) {
-        //printf("[eval] single token: \"%s\"\n", tokens[p].str);
+        printf("[eval] single token: \"%s\"\n", tokens[p].str);
         if (tokens[p].type == NUM) {
             int32_t v = (int32_t)strtol(tokens[p].str, NULL, 0);
-            //printf("[eval] NUM -> %d (0x%x)\n", v, v);
+            printf("[eval] NUM -> %d (0x%x)\n", v, v);
             return v;
         }
-      if (tokens[p].type == REG) { 
-        uint32_t val; 
-        if (!get_reg_val(tokens[p].str, &val)) { 
-            
-            *success=false; return 0; } 
-            //printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val); return (int32_t)val; }
+        if (tokens[p].type == REG) {
+            if (strcmp(tokens[p].str, "$eip") == 0) {
+                printf("[eval] REG -> %d (0x%x)\n", cpu.eip, cpu.eip);
+                return cpu.eip;
+            }
+            uint32_t val;
+            if (!get_reg_val(tokens[p].str, &val)) {
+                *success = false;
+                return 0;
+            }
+            printf("[eval] REG -> %d (0x%x)\n", val, val);
+            return (int32_t)val;
         }
+        *success = false;
+        return 0;
     }
+
     /* 2. 括号包裹 */
     if (check_parentheses(p, q)) {
-        //printf("[eval] parentheses: %d-%d\n", p+1, q-1);
-        return eval(p+1, q-1, success);
+        printf("[eval] parentheses: %d-%d\n", p + 1, q - 1);
+        return eval(p + 1, q - 1, success);
     }
 
-    /* 3. 一元运算符 */
-    if (tokens[p].type == NEG) {
-        //printf("[eval] NEG on [%d,%d]\n", p+1, q);
-        int32_t v = eval(p+1, q, success);
-        if (*success) //printf("[eval] NEG result = %d\n", -v);
-        return -v;
-    }
-    if (tokens[p].type == DEREF) {
-        //printf("[eval] DEREF on [%d,%d]\n", p+1, q);
-        int32_t addr = eval(p+1, q, success);
+    /* 3. 一元运算符：只结合「下一个初级单元」*/
+    if (tokens[p].type == NEG || tokens[p].type == DEREF || tokens[p].type == NOT) {
+        printf("[eval] %s on [%d,%d]\n",
+               tokens[p].type == NEG ? "NEG" :
+               tokens[p].type == DEREF ? "DEREF" : "NOT", p + 1, p + 1);
+        int32_t v = eval(p + 1, p + 1, success);
         if (!*success) return 0;
-        int32_t v = swaddr_read(addr, 4);
-        //printf("[eval] DEREF 0x%x -> %d (0x%x)\n", addr, v, v);
+
+        /* 应用一元操作 */
+        switch (tokens[p].type) {
+        case NEG:   v = -v; break;
+        case DEREF: v = swaddr_read(v, 4); break;
+        case NOT:   v = !v; break;
+        }
+
+        /* 后面还有表达式 → 左结合继续解析 */
+        if (p + 2 <= q) {
+            printf("[eval] %s result = %d, continue binary from %d\n",
+                   tokens[p].type == NEG ? "NEG" :
+                   tokens[p].type == DEREF ? "DEREF" : "NOT", v, p + 2);
+            int32_t rhs = eval(p + 2, q, success);
+            if (!*success) return 0;
+
+            /* 支持全部二元运算符（左结合）*/
+            switch (tokens[p + 1].type) {
+            case '+': printf("[eval] %d + %d -> %d\n", v, rhs, v + rhs); return v + rhs;
+            case '-': printf("[eval] %d - %d -> %d\n", v, rhs, v - rhs); return v - rhs;
+            case '*': printf("[eval] %d * %d -> %d\n", v, rhs, v * rhs); return v * rhs;
+            case '/':
+                if (rhs == 0) { *success = false; return 0; }
+                printf("[eval] %d / %d -> %d\n", v, rhs, v / rhs);
+                return v / rhs;
+            case EQ:  printf("[eval] %d == %d -> %d\n", v, rhs, v == rhs); return v == rhs;
+            case NEQ: printf("[eval] %d != %d -> %d\n", v, rhs, v != rhs); return v != rhs;
+            case LT:  printf("[eval] %d < %d -> %d\n", v, rhs, v < rhs);  return v < rhs;
+            case LE:  printf("[eval] %d <= %d -> %d\n", v, rhs, v <= rhs); return v <= rhs;
+            case GT:  printf("[eval] %d > %d -> %d\n", v, rhs, v > rhs);  return v > rhs;
+            case GE:  printf("[eval] %d >= %d -> %d\n", v, rhs, v >= rhs); return v >= rhs;
+            case AND: printf("[eval] %d && %d -> %d\n", v, rhs, v && rhs); return v && rhs;
+            case OR:  printf("[eval] %d || %d -> %d\n", v, rhs, v || rhs); return v || rhs;
+            default:
+                *success = false; return 0;
+            }
+        }
+        printf("[eval] %s result = %d\n",
+               tokens[p].type == NEG ? "NEG" :
+               tokens[p].type == DEREF ? "DEREF" : "NOT", v);
         return v;
     }
-    if (tokens[p].type == NOT) {
-        //printf("[eval] NOT on [%d,%d]\n", p+1, q);
-        int32_t v = eval(p+1, q, success);
-        if (*success) //printf("[eval] NOT result = %d\n", !v);
-        return !v;
-    }
 
-    /* 4. 找主运算符 */
+    /* 4. 找主运算符（二元）*/
     int op = -1, min_pri = 100, level = 0;
     int i;
     for (i = p; i <= q; i++) {
@@ -360,11 +396,11 @@ static int32_t eval(int p, int q, bool *success) {
         }
     }
     if (op == -1) {
-        //printf("[eval] no binary op found -> fail\n");
+        printf("[eval] no binary op found -> fail\n");
         *success = false;
         return 0;
     }
-    //printf("[eval] binary op \"%s\" at %d\n", tokens[op].str, op);
+    printf("[eval] binary op \"%s\" at %d\n", tokens[op].str, op);
 
     /* 5. 递归左右 */
     int32_t v1 = eval(p, op - 1, success);
@@ -374,13 +410,13 @@ static int32_t eval(int p, int q, bool *success) {
 
     /* 6. 计算并返回 */
     int32_t res = 0;
-   switch (tokens[op].type) {
+    switch (tokens[op].type) {
     case '+': res = v1 + v2; break;
     case '-': res = v1 - v2; break;
     case '*': res = v1 * v2; break;
-    case '/': 
-        if (v2 == 0) { *success = false; return 0; } 
-        res = v1 / v2; 
+    case '/':
+        if (v2 == 0) { *success = false; return 0; }
+        res = v1 / v2;
         break;
     case EQ:  res = (v1 == v2); break;
     case NEQ: res = (v1 != v2); break;
@@ -390,15 +426,13 @@ static int32_t eval(int p, int q, bool *success) {
     case GE:  res = (v1 >= v2); break;
     case AND: res = (v1 && v2); break;
     case OR:  res = (v1 || v2); break;
-    default: 
-        *success = false; 
+    default:
+        *success = false;
         return 0;
-}
-
-    //printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
+    }
+    printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
     return res;
 }
-
 
 
 int32_t expr(char *e, bool *success) {
