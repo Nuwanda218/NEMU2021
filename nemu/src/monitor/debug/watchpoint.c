@@ -126,31 +126,38 @@ void info_watchpoints() {
 /* Check all watchpoints after each instruction */
 bool check_watchpoints() {
     WP *wp = head;
-    bool success = true;
-    bool triggered = false;
+    bool success;
 
-    while (wp != NULL) {
+    while (wp) {
         uint32_t new_val = expr(wp->expr, &success);
         if (!success) {
             printf("Fail to evaluate expression for watchpoint %d: %s\n",
                    wp->NO, wp->expr);
+            WP *bad = wp;
             wp = wp->next;
+            delete_watchpoint(bad->NO);
             continue;
         }
 
-        if (new_val != wp->last_val) {
-            printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, cpu.eip);
-            printf("Expression: %s\nOld value: %d\nNew value: %d\n",
-       		wp->expr, wp->last_val, new_val);
+        /*  detect  0 -> 1  （表达式刚刚成立） */
+        if (new_val == 1 && wp->last_val == 0) {
+            printf("Hint watchpoint %d at address 0x%08x\n",
+                   wp->NO, (uint32_t)cpu.eip);   // 打印当前指令地址
+            wp->last_val = new_val;
 
-            wp->last_val = new_val;  
+            /* 一次性断点：触发即删除 */
+            WP *to_del = wp;
+            wp = wp->next;
+            delete_watchpoint(to_del->NO);
             nemu_state = STOP;
             return true;
-            //triggered = true;
         }
+
+        /* 其它情况只更新值，不触发 */
+        wp->last_val = new_val;
         wp = wp->next;
     }
-    return triggered;
+    return false;
 }
 
 /* TODO: Implement the functionality of watchpoint */
