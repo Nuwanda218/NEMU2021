@@ -153,6 +153,7 @@ bool check_watchpoints() {
             printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
                    cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);
 
+
             wp->last_val = new_val;  // update last value
             nemu_state = STOP;        // stop CPU
             triggered = true;
