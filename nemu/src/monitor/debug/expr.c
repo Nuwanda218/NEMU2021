@@ -300,11 +300,20 @@ static int32_t eval(int p, int q, bool *success) {
             return v;
         }
         if (tokens[p].type == REG) {
-            uint32_t val;
-            if (!get_reg_val(tokens[p].str, &val)) { *success=false; return 0; }
-            //printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val);
-            return (int32_t)val;
-        }
+    // 特殊处理 $eip
+    if (strcmp(tokens[p].str, "$eip") == 0) {
+        return cpu.eip;   // 返回 CPU 当前的 eip 值
+    }
+
+    uint32_t val;
+    if (!get_reg_val(tokens[p].str, &val)) { 
+        *success = false; 
+        return 0; 
+    }
+    //printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val);
+    return (int32_t)val;
+}
+
         *success = false;
         return 0;
     }
