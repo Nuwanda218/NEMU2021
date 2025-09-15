@@ -179,6 +179,7 @@ static void mark_unary_minus(void)
 /* 二次修正：把 "-" + "NUM" 合并成负 NUM token */
 static void merge_unary_minus(void)
 {
+    printf("merge_unary_minus: entry, nr_token=%d\n", nr_token);
     int dst = 0; /* 写入指针 */
     int src;     /* 读取指针 */
     for (src = 0; src < nr_token; ++src) {
