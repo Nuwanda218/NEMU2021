@@ -138,7 +138,7 @@ static bool get_reg_val(const char *reg, uint32_t *val) {
 }
 
 
-/* 统一前置判断 */
+
 static bool can_precede_unary(int type) {
     return type == '(' ||
            type == '+' || type == '-' ||
@@ -153,24 +153,24 @@ static bool can_precede_unary(int type) {
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        /* 负号 */
+        
         if (tokens[i].type == '-') {
             if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
                 if (i + 1 < nr_token && tokens[i + 1].type == NUM)
-                    continue;          // 负数字面量，跳过
+                    continue;          
                 tokens[i].type = NEG;
             }
         }
-        /* 解引用 */
+       
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
             tokens[i].type = DEREF;
         }
     }
-    printf("after mark_deref: ");
+    /*printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
-    printf("\n");
+    printf("\n");*/
 }
 
 
@@ -319,7 +319,7 @@ static int32_t eval(int p, int q, bool *success) {
     if (tokens[p].type == NEG) {
         printf("[eval] NEG on [%d,%d]\n", p+1, q);
         int32_t v = eval(p+1, q, success);
-        if (*success) printf("[eval] NEG result = %d\n", -v);
+        if (*success) //printf("[eval] NEG result = %d\n", -v);
         return -v;
     }
     if (tokens[p].type == DEREF) {
@@ -333,7 +333,7 @@ static int32_t eval(int p, int q, bool *success) {
     if (tokens[p].type == NOT) {
         printf("[eval] NOT on [%d,%d]\n", p+1, q);
         int32_t v = eval(p+1, q, success);
-        if (*success) printf("[eval] NOT result = %d\n", !v);
+        if (*success) //printf("[eval] NOT result = %d\n", !v);
         return !v;
     }
 

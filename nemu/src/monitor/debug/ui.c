@@ -3,10 +3,12 @@
 #include "monitor/watchpoint.h"
 #include "nemu.h"
 
+#include <string.h>
 #include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-
+#include "cpu/exec/helper.h"
+#include "cpu/reg.h" 
 
 void cpu_exec(uint32_t);
 
@@ -46,16 +48,25 @@ static int cmd_si(char *args) {
     return 0;
 }
 
+/* Extend info command to show watchpoints */
 static int cmd_info(char *args) {
-    char *arg = strtok(NULL, " ");
-    int i;                          /* C89 requirment */
-
-    if (arg && strcmp(arg, "r") == 0) {
-        for (i = 0; i < 8; i++) {
-            printf("%s 0x%08x %d\n", regsl[i], cpu.gpr[i]._32, cpu.gpr[i]._32);
-        }
+    if (args == NULL) {
+        printf("Usage: info r - display registers\n");
+        printf("       info w - display watchpoints\n");
         return 0;
     }
+
+    if (strcmp(args, "r") == 0) {
+        
+        isa_reg_display();
+    } else if (strcmp(args, "w") == 0) {
+        
+        info_watchpoints();
+    } else {
+        printf("Unknown info command: %s\n", args);
+        printf("Supported: info r, info w\n");
+    }
+
     return 0;
 }
 
@@ -112,6 +123,54 @@ static int cmd_p(char *args) {
     return 0;
 }
 
+/* Set a new watchpoint */
+static int cmd_w(char *args) {
+    if (args == NULL) {
+        printf("Usage: w EXPR\n");
+        return 0;
+    }
+
+    bool success = true;
+    // evaluate the expression once and store the initial value
+    int val = expr(args, &success);
+    if (!success) {
+        printf("Invalid expression: %s\n", args);
+        return 0;
+    }
+
+    WP *wp = new_wp();  // allocate a new watchpoint
+    if (!wp) return 0;
+
+    // copy expression and store initial value
+    strncpy(wp->expr, args, sizeof(wp->expr) - 1);
+    wp->expr[sizeof(wp->expr) - 1] = '\0';
+    wp->last_val = val;
+
+    printf("Watchpoint %d set on \"%s\", initial value = %d\n",
+           wp->NO, wp->expr, wp->last_val);
+
+    return 0;
+}
+
+/* Delete a watchpoint by number */
+static int cmd_d(char *args) {
+    if (args == NULL) {
+        printf("Usage: d N\n");
+        return 0;
+    }
+    int no = atoi(args);
+    WP *wp = head;
+    while (wp != NULL) {
+        if (wp->NO == no) {
+            free_wp(wp);
+            printf("Watchpoint %d deleted.\n", no);
+            return 0;
+        }
+        wp = wp->next;
+    }
+    printf("No watchpoint number %d found.\n", no);
+    return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -124,10 +183,11 @@ static struct {
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
     { "si", "Step execute N instructions (usage: si [N], default N=1)", cmd_si },
-	{ "info", "Display program status (usage: info r)", cmd_info },
+	{ "info", "Display program status or watchpoints (usage: info r|w)", cmd_info },
 	{ "x", "Scan memory. Print N 4-byte values starting at the address computed by EXPR (usage: x N EXPR, default N=1)", cmd_x },
 	{ "p", "Evaluate and print the value of an expression (usage: p EXPR)", cmd_p },
-
+	{ "w",    "Set a watchpoint (usage: w EXPR)", cmd_w },
+	{ "d",    "Delete a watchpoint by number (usage: d N)", cmd_d },
 
 	/* TODO: Add more commands */
 

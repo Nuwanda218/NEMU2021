@@ -70,4 +70,8 @@ extern const char* regsl[];
 extern const char* regsw[];
 extern const char* regsb[];
 
+// Display CPU register state
+void isa_reg_display(void);
+
+
 #endif
