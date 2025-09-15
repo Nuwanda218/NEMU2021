@@ -217,10 +217,10 @@ static void mark_deref(void)
     //mark_unary_minus();
 
     /* 原有的 debug 打印 */
-    printf("after mark_deref: ");
-    for (i = 0; i < nr_token; i++)
+    //printf("after mark_deref: ");
+    /*for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
-    printf("\n");
+    printf("\n");*/
 }
 
     /* Debug print
@@ -246,7 +246,7 @@ static bool make_token(char *e) {
 				char *substr_start = e + position;
 				int substr_len = pmatch.rm_eo;
 
-				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
+				//Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
 				position += substr_len;
 				matched = true;
 				/* TODO: Now a new token is recognized with rules[i]. Add codes
@@ -321,11 +321,11 @@ static bool make_token(char *e) {
     mark_deref(); /* === Added: must run after tokenization === */
     merge_unary_minus();       // 新增：把 "-" + "NUM" 合并成负 NUM token
         /* ===== 打印 token 列表，方便调试 ===== */
-    printf("------- tokens after merge_unary_minus -------\n");
-    int i;
+    //printf("------- tokens after merge_unary_minus -------\n");
+    /*int i;
     for (i = 0; i < nr_token; ++i)
         printf("  [%d] type=%d, str=\"%s\"\n", i, tokens[i].type, tokens[i].str);
-    printf("---------------------------------------------\n");
+    printf("---------------------------------------------\n");*/
 	return true; 
 }
 
