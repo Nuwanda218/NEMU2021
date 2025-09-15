@@ -322,25 +322,36 @@ static int32_t eval(int p, int q, bool *success) {
     }
 
     /* 3. 一元运算符 */
-if (tokens[p].type == NEG) {
-    /* 只解析 **下一个** token 作为操作数 */
-    if (p + 1 > q) { *success = false; return 0; }
-    int32_t v = eval(p + 1, p + 1, success);   // 只取一个
-    if (!*success) return 0;
-    return -v;
-}
-if (tokens[p].type == DEREF) {
-    if (p + 1 > q) { *success = false; return 0; }
-    int32_t addr = eval(p + 1, p + 1, success);
-    if (!*success) return 0;
-    return swaddr_read(addr, 4);
-}
-if (tokens[p].type == NOT) {
-    if (p + 1 > q) { *success = false; return 0; }
-    int32_t v = eval(p + 1, p + 1, success);
-    if (!*success) return 0;
-    return !v;
-}
+    if (tokens[p].type == NEG) {
+        if (p + 1 > q) {
+            printf("[eval] no operand for unary '-'\n");
+            *success = false;
+            return 0;
+        }
+        int32_t v = eval(p + 1, p + 1, success);   // 只取下一个 token 作为操作数
+        if (!*success) return 0;
+        return -v;
+    }
+    if (tokens[p].type == DEREF) {
+        if (p + 1 > q) {
+            printf("[eval] no operand for unary '*'\n");
+            *success = false;
+            return 0;
+        }
+        int32_t addr = eval(p + 1, p + 1, success);
+        if (!*success) return 0;
+        return swaddr_read(addr, 4);
+    }
+    if (tokens[p].type == NOT) {
+        if (p + 1 > q) {
+            printf("[eval] no operand for unary '!'\n");
+            *success = false;
+            return 0;
+        }
+        int32_t v = eval(p + 1, p + 1, success);
+        if (!*success) return 0;
+        return !v;
+    }
 
     /* 4. 找主运算符 */
     int op = -1, min_pri = 100, level = 0;
@@ -386,7 +397,6 @@ if (tokens[p].type == NOT) {
     case '-': res = v1 - v2; break;
     case '*': res = v1 * v2; break;
     case '/': if (v2 == 0) { *success = false; return 0; } res = v1 / v2; break;
-    /* ... 其他运算符同理 ... */
     }
     printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
     return res;
