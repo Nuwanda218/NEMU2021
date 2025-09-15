@@ -146,6 +146,7 @@ bool check_watchpoints() {
 
         // Trigger if value changed
         if (new_val != (int)wp->last_val) {
+             printf("[WP%d] Failed to evaluate expression \"%s\"\n", wp->NO, wp->expr);
             printf("\nHint watchpoint %d at address eip=0x%08x \n", wp->NO, cpu.eip);
             printf("Expression: %s\n", wp->expr);
             printf("Old value: %d (0x%x)\nNew value: %d (0x%x)\n",
