@@ -299,20 +299,14 @@ static int32_t eval(int p, int q, bool *success) {
             //printf("[eval] NUM -> %d (0x%x)\n", v, v);
             return v;
         }
-       if (tokens[p].type == REG) {
-    if (strcmp(tokens[p].str, "$eip") == 0) {
-        return cpu.eip;  // 返回 CPU 当前 eip
+      if (tokens[p].type == REG) { 
+        uint32_t val; 
+        if (!get_reg_val(tokens[p].str, &val)) { 
+            
+            *success=false; return 0; } 
+            //printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val); return (int32_t)val; }
+        }
     }
-        uint32_t val;
-    if (!get_reg_val(tokens[p].str, &val)) { *success = false; return 0; }
-        return (int32_t)val;
-    }
-
-
-            *success = false;
-            return 0;
-    }
-
     /* 2. 括号包裹 */
     if (check_parentheses(p, q)) {
         //printf("[eval] parentheses: %d-%d\n", p+1, q-1);
@@ -380,13 +374,27 @@ static int32_t eval(int p, int q, bool *success) {
 
     /* 6. 计算并返回 */
     int32_t res = 0;
-    switch (tokens[op].type) {
+   switch (tokens[op].type) {
     case '+': res = v1 + v2; break;
     case '-': res = v1 - v2; break;
     case '*': res = v1 * v2; break;
-    case '/': if (v2 == 0) { *success = false; return 0; } res = v1 / v2; break;
-    /* ... 其他运算符同理 ... */
-    }
+    case '/': 
+        if (v2 == 0) { *success = false; return 0; } 
+        res = v1 / v2; 
+        break;
+    case EQ:  res = (v1 == v2); break;
+    case NEQ: res = (v1 != v2); break;
+    case LT:  res = (v1 < v2); break;
+    case LE:  res = (v1 <= v2); break;
+    case GT:  res = (v1 > v2); break;
+    case GE:  res = (v1 >= v2); break;
+    case AND: res = (v1 && v2); break;
+    case OR:  res = (v1 || v2); break;
+    default: 
+        *success = false; 
+        return 0;
+}
+
     //printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
     return res;
 }
