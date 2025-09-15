@@ -154,25 +154,28 @@ static bool can_precede_unary(int type) {
 static void mark_deref() {
     int i;
     for (i = 0; i < nr_token; i++) {
-        /* 负号 */
+        /* Unary minus */
         if (tokens[i].type == '-') {
             if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                if (i + 1 < nr_token && tokens[i + 1].type == NUM)
-                    continue;          // 负数字面量，跳过
                 tokens[i].type = NEG;
             }
         }
-        /* 解引用 */
+
+        /* Unary dereference */
         if (tokens[i].type == '*' &&
             (i == 0 || can_precede_unary(tokens[i - 1].type))) {
             tokens[i].type = DEREF;
         }
     }
+
+    // Debug print
     printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
         printf("[%d:%d:%s] ", i, tokens[i].type, tokens[i].str);
     printf("\n");
 }
+
+
     /* Debug print
     printf("after mark_deref: ");
     for (i = 0; i < nr_token; i++)
@@ -290,25 +293,16 @@ static bool check_parentheses(int p, int q) {
 
 /* Recursive evaluation */
 static int32_t eval(int p, int q, bool *success) {
-    printf("[eval] enter: p=%d q=%d\n", p, q);
-    if (p > q) {
-        printf("[eval] empty range\n");
-        *success = false;
-        return 0;
-    }
+    if (p > q) { *success = false; return 0; }
 
     /* 1. 单 token */
     if (p == q) {
-        printf("[eval] single token: \"%s\"\n", tokens[p].str);
         if (tokens[p].type == NUM) {
-            int32_t v = (int32_t)strtol(tokens[p].str, NULL, 0);
-            printf("[eval] NUM -> %d (0x%x)\n", v, v);
-            return v;
+            return (int32_t)strtol(tokens[p].str, NULL, 0);
         }
         if (tokens[p].type == REG) {
             uint32_t val;
             if (!get_reg_val(tokens[p].str, &val)) { *success=false; return 0; }
-            printf("[eval] REG -> %d (0x%x)\n", (int32_t)val, val);
             return (int32_t)val;
         }
         *success = false;
@@ -316,91 +310,67 @@ static int32_t eval(int p, int q, bool *success) {
     }
 
     /* 2. 括号包裹 */
-    if (check_parentheses(p, q)) {
-        printf("[eval] parentheses: %d-%d\n", p+1, q-1);
+    if (check_parentheses(p, q))
         return eval(p+1, q-1, success);
+
+    /* 3. 一元运算 */
+    if (tokens[p].type == NEG || tokens[p].type == DEREF || tokens[p].type == NOT) {
+        int32_t val = eval(p+1, q, success);  // 递归整个右侧表达式
+        if (!*success) return 0;
+        switch (tokens[p].type) {
+            case NEG: return -val;
+            case DEREF: return swaddr_read((uint32_t)val, 4);
+            case NOT: return !val;
+        }
     }
 
-    /* 3. 一元运算符 */
-    if (tokens[p].type == NEG) {
-        if (p + 1 > q) {
-            printf("[eval] no operand for unary '-'\n");
-            *success = false;
-            return 0;
-        }
-        int32_t v = eval(p + 1, p + 1, success);   // 只取下一个 token 作为操作数
-        if (!*success) return 0;
-        return -v;
-    }
-    if (tokens[p].type == DEREF) {
-        if (p + 1 > q) {
-            printf("[eval] no operand for unary '*'\n");
-            *success = false;
-            return 0;
-        }
-        int32_t addr = eval(p + 1, p + 1, success);
-        if (!*success) return 0;
-        return swaddr_read(addr, 4);
-    }
-    if (tokens[p].type == NOT) {
-        if (p + 1 > q) {
-            printf("[eval] no operand for unary '!'\n");
-            *success = false;
-            return 0;
-        }
-        int32_t v = eval(p + 1, p + 1, success);
-        if (!*success) return 0;
-        return !v;
-    }
-
-    /* 4. 找主运算符 */
+    /* 4. 主运算符查找（binary operators） */
     int op = -1, min_pri = 100, level = 0;
     int i;
     for (i = p; i <= q; i++) {
         int t = tokens[i].type;
-        if (t == '(') level++;
-        else if (t == ')') level--;
+        if (t == '(') { level++; continue; }
+        if (t == ')') { level--; continue; }
         if (level > 0) continue;
 
         int pri = -1;
-        switch (t) {
-        case OR: pri = 1; break;
-        case AND: pri = 2; break;
-        case EQ: case NEQ: pri = 3; break;
-        case LT: case LE: case GT: case GE: pri = 4; break;
-        case '+': case '-': pri = 5; break;
-        case '*': case '/': pri = 6; break;
+        switch(t) {
+            case OR: pri = 1; break;
+            case AND: pri = 2; break;
+            case EQ: case NEQ: pri = 3; break;
+            case LT: case LE: case GT: case GE: pri = 4; break;
+            case '+': case '-': pri = 5; break;
+            case '*': case '/': pri = 6; break;
         }
-        if (pri > 0 && pri <= min_pri &&
-            t != NEG && t != DEREF && t != NOT) {
+        if (pri > 0 && pri <= min_pri && t != NEG && t != DEREF && t != NOT) {
             min_pri = pri;
             op = i;
         }
     }
-    if (op == -1) {
-        printf("[eval] no binary op found -> fail\n");
-        *success = false;
-        return 0;
-    }
-    printf("[eval] binary op \"%s\" at %d\n", tokens[op].str, op);
+    if (op == -1) { *success = false; return 0; }
 
-    /* 5. 递归左右 */
-    int32_t v1 = eval(p, op - 1, success);
+    int32_t v1 = eval(p, op-1, success);
     if (!*success) return 0;
-    int32_t v2 = eval(op + 1, q, success);
+    int32_t v2 = eval(op+1, q, success);
     if (!*success) return 0;
 
-    /* 6. 计算并返回 */
-    int32_t res = 0;
     switch (tokens[op].type) {
-    case '+': res = v1 + v2; break;
-    case '-': res = v1 - v2; break;
-    case '*': res = v1 * v2; break;
-    case '/': if (v2 == 0) { *success = false; return 0; } res = v1 / v2; break;
+        case '+': return v1 + v2;
+        case '-': return v1 - v2;
+        case '*': return v1 * v2;
+        case '/': if (v2==0){*success=false;return 0;} return v1 / v2;
+        case EQ: return v1 == v2;
+        case NEQ: return v1 != v2;
+        case LT: return v1 < v2;
+        case LE: return v1 <= v2;
+        case GT: return v1 > v2;
+        case GE: return v1 >= v2;
+        case AND: return v1 && v2;
+        case OR: return v1 || v2;
+        default: *success=false; return 0;
     }
-    printf("[eval] %d %s %d -> %d\n", v1, tokens[op].str, v2, res);
-    return res;
 }
+
 
 
 
