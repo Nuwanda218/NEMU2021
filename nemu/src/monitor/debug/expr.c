@@ -33,8 +33,8 @@ static struct rule {
     {" +",      NOTYPE},            // spaces
 
     // Numbers and registers
-    {"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
-    {"-[0-9]+", NUM},               // decimal number with leading '-'
+    //{"-0[xX][0-9a-fA-F]+", NUM},   // hexadecimal number with optional leading '-'
+    //{"-[0-9]+", NUM},               // decimal number with leading '-'
 
     {"0[xX][0-9a-fA-F]+", NUM},     // hexadecimal number
     {"[0-9]+", NUM},                // decimal number
@@ -156,10 +156,11 @@ static void mark_deref() {
     for (i = 0; i < nr_token; i++) {
         /* Unary minus */
         if (tokens[i].type == '-') {
-            if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
-                tokens[i].type = NEG;
-            }
-        }
+        if (i == 0 || can_precede_unary(tokens[i - 1].type)) {
+        tokens[i].type = NEG;
+    }
+}
+
 
         /* Unary dereference */
         if (tokens[i].type == '*' &&
