@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include "monitor/monitor.h"   // for nemu_state
 #include "cpu/reg.h"
 
@@ -13,9 +12,8 @@ extern int nemu_state;
 extern CPU_state cpu;          // CPU registers
 
 static WP wp_pool[NR_WP];
- WP *head = NULL;
+WP *head = NULL;
 static WP *free_ = NULL;   
-
 
 /* Initialize the watchpoint pool */
 void init_wp_pool() {
@@ -117,7 +115,7 @@ void info_watchpoints() {
         return;
     }
     printf("Num\tExpr\tValue\n");
-	WP *p;
+    WP *p;
     for (p = head; p; p = p->next) {
         printf("%d\t%s\t%u\n", p->NO, p->expr, p->last_val);
     }
@@ -140,19 +138,14 @@ bool check_watchpoints() {
             continue;
         }
 
-        // Debug info: check current value vs last value
-        /*printf("[WP%d] Check at eip=0x%08x: expr=\"%s\" old=%d (0x%x), new=%d (0x%x)\n",
-               wp->NO, cpu.eip, wp->expr, wp->last_val, wp->last_val, new_val, new_val);*/
-
         // Trigger if value changed
         if (new_val != (int)wp->last_val) {
             printf("\nHint watchpoint %d at address eip=0x%08x \n", wp->NO, cpu.eip);
             printf("Expression: %s\n", wp->expr);
-            //printf("Old value: %d (0x%x)\nNew value: %d (0x%x)\n",
-                   //wp->last_val, wp->last_val, new_val, new_val);
-            /*printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
-                   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);*/
-
+            printf("Old value: %d (0x%x)\nNew value: %d (0x%x)\n",
+                   wp->last_val, wp->last_val, new_val, new_val);
+            printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n",
+                   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);
 
             wp->last_val = new_val;  // update last value
             nemu_state = STOP;        // stop CPU
@@ -164,8 +157,3 @@ bool check_watchpoints() {
 
     return triggered;
 }
-
-
-/* TODO: Implement the functionality of watchpoint */
-
-
