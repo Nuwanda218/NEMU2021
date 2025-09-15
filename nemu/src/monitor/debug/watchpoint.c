@@ -127,9 +127,12 @@ void info_watchpoints() {
 bool check_watchpoints() {
     WP *wp = head;
     bool success;
+    
+   
 
     while (wp) {
         uint32_t new_val = expr(wp->expr, &success);
+         printf("[wp] wp%d expr=%s val=%u last=%u\n", wp->NO, wp->expr, new_val, wp->last_val);
         if (!success) {
             printf("Fail to evaluate expression for watchpoint %d: %s\n",
                    wp->NO, wp->expr);
