@@ -73,6 +73,8 @@ void free_wp(WP *wp) {
     // add to free list head
     wp->next = free_;
     free_ = wp;
+    wp->expr[0] = '\0';
+    wp->last_val = 0;
 }
 
 /* Add a new watchpoint with given expression */
@@ -128,7 +130,7 @@ bool check_watchpoints() {
     bool triggered = false;
 
     while (wp != NULL) {
-        int new_val = expr(wp->expr, &success);
+        uint32_t new_val = expr(wp->expr, &success);
         if (!success) {
             printf("Fail to evaluate expression for watchpoint %d: %s\n",
                    wp->NO, wp->expr);
@@ -136,14 +138,15 @@ bool check_watchpoints() {
             continue;
         }
 
-        if (new_val != (int)wp->last_val) {
+        if (new_val != wp->last_val) {
             printf("Hint watchpoint %d at address 0x%08x\n", wp->NO, cpu.eip);
             printf("Expression: %s\nOld value: %d\nNew value: %d\n",
-       		wp->expr, (int)wp->last_val, (int)new_val);
+       		wp->expr, wp->last_val, new_val);
 
             wp->last_val = new_val;  
             nemu_state = STOP;
-            triggered = true;
+            return true;
+            //triggered = true;
         }
         wp = wp->next;
     }
