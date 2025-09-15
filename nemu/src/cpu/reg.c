@@ -11,12 +11,14 @@ const char *regsw[] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
 const char *regsb[] = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
 
 void isa_reg_display(void) {
-    printf("EAX: 0x%08x  ECX: 0x%08x  EDX: 0x%08x  EBX: 0x%08x\n",
+    printf("$eax(0x%08x)  $ecx(0x%08x)  $edx(0x%08x)  $ebx(0x%08x)\n",
            cpu.eax, cpu.ecx, cpu.edx, cpu.ebx);
-    printf("ESP: 0x%08x  EBP: 0x%08x  ESI: 0x%08x  EDI: 0x%08x\n",
+    printf("$esp(0x%08x)  $ebp(0x%08x)  $esi(0x%08x)  $edi(0x%08x)\n",
            cpu.esp, cpu.ebp, cpu.esi, cpu.edi);
-    printf("EIP: 0x%08x  EFLAGS: 0x%08x\n", cpu.eip, cpu.eflags.val);
+    printf("$eip(0x%08x)  $eflags(0x%08x)\n",
+           cpu.eip, cpu.eflags.val);
 }
+
 
 void reg_test() {
 	srand(time(0));
