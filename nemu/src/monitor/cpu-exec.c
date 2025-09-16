@@ -77,36 +77,13 @@ void cpu_exec(volatile uint32_t n) {
 		}
 #endif
 
-		/* ======= 监视点检查 ======= */
-		if (head) {  // 只有当有监视点时才检查
-			WP *wp = head;
-			while (wp) {
-				bool success = true;
-				int new_val = expr(wp->expr, &success);
-				if (!success) {
-					printf("[WP%d] Failed to evaluate expression: \"%s\"\n", wp->NO, wp->expr);
-					wp = wp->next;
-					continue;
-				}
-				// 输出调试信息
-				/*printf("[WP%d] eip=0x%08x expr=\"%s\" old=%d new=%d\n",
-					   wp->NO, cpu.eip, wp->expr, wp->last_val, new_val);*/
-
-				if (new_val != (int)wp->last_val) {
-					printf("\nHint watchpoint %d at address 0x%08x \n", wp->NO, cpu.eip);
-					printf("Expression: %s\nOld value: %d\nNew value: %d\n",
-						   wp->expr, wp->last_val, new_val);
-					/*printf("CPU Registers: eip=0x%08x eax=0x%08x ebx=0x%08x ecx=0x%08x edx=0x%08x\n\n",
-						   cpu.eip, cpu.eax, cpu.ebx, cpu.ecx, cpu.edx);*/
-
-					wp->last_val = new_val;  // 更新 last_val
-					nemu_state = STOP;        // 停止 CPU
-					return;                   // 停止执行
-				}
-				wp = wp->next;
-			}
-		}
-		/* ============================ */
+		/* ======= 执行指令并检查监视点 ======= */
+	if (check_watchpoints()) {
+    // 如果监视点触发，停止执行
+    	return;
+	}
+/* ============================ */
+/* TODO: 其他执行逻辑 */
 		/* TODO: check watchpoints here. */
 	
 
