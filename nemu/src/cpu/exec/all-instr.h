@@ -6,6 +6,7 @@
 #include "data-mov/cltd.h"
 
 #include "arith/adc.h"
+#include "arith/add.h"
 #include "arith/dec.h"
 #include "arith/inc.h"
 #include "arith/neg.h"
@@ -15,6 +16,7 @@
 #include "arith/div.h"
 #include "arith/sbb.h"
 #include "arith/sub.h"
+
 
 #include "control/jmp.h"
 
