@@ -1,5 +1,5 @@
 #include "trap.h"
-
+#include <stdint.h>
 uint32_t pushpop(uint32_t v) {
     uint32_t out;
     __asm__ volatile (
@@ -15,7 +15,8 @@ int data[] = {0, 1, 0xffffffff, 0x7fffffff, 0x80000000};
 #define N (sizeof(data)/sizeof(data[0]))
 
 int main() {
-    for (int i = 0; i < N; i++) {
+    int i;
+    for (i = 0; i < N; i++) {
         nemu_assert(pushpop(data[i]) == data[i]);
     }
     return 0;
