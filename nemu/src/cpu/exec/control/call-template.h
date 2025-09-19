@@ -2,30 +2,22 @@
 
 #define instr call
 
+/* 通用执行过程:
+ *  1. 将返回地址(eip + 指令长度)压入栈
+ *  2. eip 跳转到相对偏移后的目标地址
+ */
 static void do_execute() {
-	OPERAND_W(op_dest, op_src->val);
-	print_asm_template2();
+    // 1. push return address
+    cpu.esp -= DATA_BYTE;
+    swaddr_write(cpu.esp, DATA_BYTE, cpu.eip + op_src->size + 1); // +1: opcode 本身
+
+    // 2. 跳转 (rel 是有符号立即数)
+    cpu.eip += op_src->val;
+
+    print_asm_template1();
 }
 
-make_instr_helper(i2r)
-make_instr_helper(i2rm)
-make_instr_helper(r2rm)
-make_instr_helper(rm2r)
-
-make_helper(concat(mov_a2moffs_, SUFFIX)) {
-	swaddr_t addr = instr_fetch(eip + 1, 4);
-	MEM_W(addr, REG(R_EAX));
-
-	print_asm("mov" str(SUFFIX) " %%%s,0x%x", REG_NAME(R_EAX), addr);
-	return 5;
-}
-
-make_helper(concat(mov_moffs2a_, SUFFIX)) {
-	swaddr_t addr = instr_fetch(eip + 1, 4);
-	REG(R_EAX) = MEM_R(addr);
-
-	print_asm("mov" str(SUFFIX) " 0x%x,%%%s", addr, REG_NAME(R_EAX));
-	return 5;
-}
+/* 使用 decode_i_* 来解析立即数 */
+make_instr_helper(i)   // 生成 call_i_b/w/l
 
 #include "cpu/exec/template-end.h"
