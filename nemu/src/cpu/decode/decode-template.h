@@ -21,7 +21,7 @@ make_helper(concat(decode_i_, SUFFIX)) {
 	return DATA_BYTE;
 }
 
-#if DATA_BYTE == 1 || DATA_BYTE == 4
+#if DATA_BYTE == 1 || DATA_BYTE == 2 || DATA_BYTE == 4
 /* sign immediate */
 make_helper(concat(decode_si_, SUFFIX)) {
 	op_src->type = OP_TYPE_IMM;
@@ -32,6 +32,10 @@ make_helper(concat(decode_si_, SUFFIX)) {
 	 *
 	op_src->simm = ???
 	 */
+	// 读取 DATA_BYTE 字节，并做符号扩展
+    op_src->simm = (int32_t)((int32_t)instr_fetch(eip, DATA_BYTE)
+                             << (32 - 8 * DATA_BYTE))
+                             >> (32 - 8 * DATA_BYTE);
 	panic("please implement me");
 
 	op_src->val = op_src->simm;
