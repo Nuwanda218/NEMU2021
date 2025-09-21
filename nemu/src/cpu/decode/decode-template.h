@@ -32,8 +32,7 @@ make_helper(concat(decode_si_, SUFFIX)) {
 	 *
 	op_src->simm = ???
 	 */
-	// 读取 DATA_BYTE 字节，并做符号扩展
-    // 正确的符号扩展写法
+	 // 读取 DATA_BYTE 字节立即数，并做符号扩展
 #if DATA_BYTE == 1
     op_src->simm = (int32_t)(int8_t)instr_fetch(eip, 1);
 #elif DATA_BYTE == 2
@@ -43,13 +42,15 @@ make_helper(concat(decode_si_, SUFFIX)) {
 #endif
 
     op_src->val = op_src->simm;
-    printf("[decode_si_%d] eip=0x%x simm=%d\n",
-           DATA_BYTE, eip, op_src->simm);
+
+    printf("[decode_si_%d] eip=0x%x simm=%d, target=0x%x\n",
+           DATA_BYTE, eip, op_src->simm, eip + DATA_BYTE + op_src->simm);
 
 #ifdef DEBUG
     snprintf(op_src->str, OP_STR_SIZE, "$0x%x", op_src->val);
 #endif
-    return DATA_BYTE;
+
+    return DATA_BYTE; // 返回立即数长度
 }
 
 #endif
