@@ -33,25 +33,25 @@ make_helper(concat(decode_si_, SUFFIX)) {
 	op_src->simm = ???
 	 */
 	// 读取 DATA_BYTE 字节，并做符号扩展
-     // 读取 DATA_BYTE 字节并进行符号扩展
-    op_src->simm = (int32_t)((int32_t)instr_fetch(eip, DATA_BYTE)
-                              << (32 - 8 * DATA_BYTE))
-                              >> (32 - 8 * DATA_BYTE);
+    // 正确的符号扩展写法
+#if DATA_BYTE == 1
+    op_src->simm = (int32_t)(int8_t)instr_fetch(eip, 1);
+#elif DATA_BYTE == 2
+    op_src->simm = (int32_t)(int16_t)instr_fetch(eip, 2);
+#else // DATA_BYTE == 4
+    op_src->simm = (int32_t)instr_fetch(eip, 4);
+#endif
 
-
-	op_src->val = op_src->simm;
-	// 调试输出
-    printf("[decode_si_%d] eip=0x%x raw=0x%x simm=%d\n",
-           DATA_BYTE,
-           eip,
-           instr_fetch(eip, DATA_BYTE),
-           op_src->simm);
+    op_src->val = op_src->simm;
+    printf("[decode_si_%d] eip=0x%x simm=%d\n",
+           DATA_BYTE, eip, op_src->simm);
 
 #ifdef DEBUG
-	snprintf(op_src->str, OP_STR_SIZE, "$0x%x", op_src->val);
+    snprintf(op_src->str, OP_STR_SIZE, "$0x%x", op_src->val);
 #endif
-	return DATA_BYTE;
+    return DATA_BYTE;
 }
+
 #endif
 
 /* eAX */
