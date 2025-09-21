@@ -33,12 +33,19 @@ make_helper(concat(decode_si_, SUFFIX)) {
 	op_src->simm = ???
 	 */
 	// 读取 DATA_BYTE 字节，并做符号扩展
+     // 读取 DATA_BYTE 字节并进行符号扩展
     op_src->simm = (int32_t)((int32_t)instr_fetch(eip, DATA_BYTE)
-                             << (32 - 8 * DATA_BYTE))
-                             >> (32 - 8 * DATA_BYTE);
-	panic("please implement me");
+                              << (32 - 8 * DATA_BYTE))
+                              >> (32 - 8 * DATA_BYTE);
+
 
 	op_src->val = op_src->simm;
+	// 调试输出
+    printf("[decode_si_%d] eip=0x%x raw=0x%x simm=%d\n",
+           DATA_BYTE,
+           eip,
+           instr_fetch(eip, DATA_BYTE),
+           op_src->simm);
 
 #ifdef DEBUG
 	snprintf(op_src->str, OP_STR_SIZE, "$0x%x", op_src->val);
