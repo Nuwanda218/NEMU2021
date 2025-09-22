@@ -1,6 +1,5 @@
 #include "cpu/exec/helper.h"
 
-// 为 8/16/32 位分别生成 helper
 #define DATA_BYTE 1
 #include "test-template.h"
 #undef DATA_BYTE
@@ -13,7 +12,7 @@
 #include "test-template.h"
 #undef DATA_BYTE
 
-// 根据 is_operand_size_16 选择 _w 还是 _l 版本
-make_helper_v(test_rm2r)
+/* for instruction encoding overloading */
+
 make_helper_v(test_i2rm)
-make_helper_v(test_i2a)
+make_helper_v(test_r2rm)
