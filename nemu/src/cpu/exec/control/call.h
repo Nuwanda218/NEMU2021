@@ -1,8 +1,5 @@
-#ifndef __CALL_H__
-#define __CALL_H__
-
-make_helper(call_i_w);
-make_helper(call_i_l);
-make_helper(call_i_v);   // 根据前缀选择 w/l
-
-#endif
+#include "cpu/exec/helper.h"
+ 
+//声明指令最终的函数体，用于调用使用
+make_helper(call_i_v);
+make_helper(call_rm_v);
