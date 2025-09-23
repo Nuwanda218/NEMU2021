@@ -9,4 +9,9 @@ static inline bool check_cc_e(){
         return cpu.eflags.ZF;
 }
 
+//jbe条件的判断，检测CF和ZF标志位
+static inline bool check_cc_be(){
+        return cpu.eflags.CF | cpu.eflags.ZF;
+}
+
 #endif

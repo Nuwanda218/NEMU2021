@@ -10,5 +10,7 @@
     }
  
 make_jcc_helper(e)
+
+make_jcc_helper(be)
  
 #include "cpu/exec/template-end.h"
