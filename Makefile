@@ -66,8 +66,8 @@ clean: clean-cpp
 #USERPROG := obj/testcase/bit
 #USERPROG := obj/testcase/mul-longlong
 #USERPROG := obj/testcase/matrix-mul
-USERPROG := obj/testcase/sum
-
+#USERPROG := obj/testcase/sum
+USERPROG := obj/testcase/max
 
 ENTRY := $(USERPROG)
 
