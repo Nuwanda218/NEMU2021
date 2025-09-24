@@ -70,20 +70,7 @@ USERPROG := obj/testcase/sum
 USERPROG := obj/testcase/max
 USERPROG := obj/testcase/pascal
 USERPROG := obj/testcase/shuixianhua
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
-USERPROG := obj/testcase/pascal
+
 
 
 
