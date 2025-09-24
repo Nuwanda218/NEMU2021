@@ -1,18 +1,14 @@
 #include "cpu/exec/template-start.h"
-
+ 
 #define instr pop
-
-static void do_execute() {
-    // read value from stack top
-    DATA_TYPE val = MEM_R(REG(R_ESP));
-    // write to destination operand
-    OPERAND_W(op_dest, val);
-    // move ESP up
-    REG(R_ESP) += DATA_BYTE;
+ 
+static void do_execute(){
+    //向译码出的对象操作数中写入栈顶的数据
+    OPERAND_W(op_src,swaddr_read(cpu.esp, 4));
+    cpu.esp += 4;  //栈顶加4进行地址回退
     print_asm_template1();
 }
-
-make_instr_helper(r)   // pop r16/r32
-make_instr_helper(rm)  // pop r/m16 or r/m32
-
+ 
+make_instr_helper(r)
+ 
 #include "cpu/exec/template-end.h"
