@@ -62,7 +62,7 @@ clean: clean-cpp
 #USERPROG := obj/testcase/matrix-mul-small
 #USERPROG := obj/testcase/movsx
 USERPROG := obj/testcase/quick-sort
-
+USERPROG := obj/testcase/sub-longlong
 
 ENTRY := $(USERPROG)
 
