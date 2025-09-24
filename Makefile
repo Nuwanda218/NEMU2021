@@ -68,6 +68,7 @@ clean: clean-cpp
 #USERPROG := obj/testcase/matrix-mul
 #USERPROG := obj/testcase/sum
 USERPROG := obj/testcase/max
+USERPROG := obj/testcase/pascal
 
 ENTRY := $(USERPROG)
 
