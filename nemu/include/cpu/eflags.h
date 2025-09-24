@@ -19,5 +19,21 @@ static inline bool check_cc_ne(){
         return !cpu.eflags.ZF;
 }
 
+//le条件的判断，检测OF与SF位的异或结果确定是否小于
+static inline bool check_cc_le(){
+        return (cpu.eflags.OF ^ cpu.eflags.SF) | cpu.eflags.ZF;
+}
+
+
+//l条件的判断
+static inline bool check_cc_l(){
+        return cpu.eflags.OF ^ cpu.eflags.SF;
+}
+
+//g条件的判断
+static inline bool check_cc_g(){
+        return !((cpu.eflags.OF ^ cpu.eflags.SF) | cpu.eflags.ZF);
+}
+
 
 #endif
