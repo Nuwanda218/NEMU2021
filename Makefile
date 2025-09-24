@@ -71,6 +71,7 @@ USERPROG := obj/testcase/max
 USERPROG := obj/testcase/pascal
 USERPROG := obj/testcase/shuixianhua
 USERPROG := obj/testcase/fact
+USERPROG := obj/testcase/if-else
 
 
 
