@@ -63,7 +63,8 @@ clean: clean-cpp
 #USERPROG := obj/testcase/movsx
 #USERPROG := obj/testcase/quick-sort
 #USERPROG := obj/testcase/sub-longlong
-USERPROG := obj/testcase/bit
+#USERPROG := obj/testcase/bit
+USERPROG := obj/testcase/mul-longlong
 
 
 
