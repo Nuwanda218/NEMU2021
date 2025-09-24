@@ -60,7 +60,10 @@ clean: clean-cpp
 #USERPROG := obj/testcase/gotbaha
 #USERPROG := obj/testcase/leap-year
 #USERPROG := obj/testcase/matrix-mul-small
-USERPROG := obj/testcase/movsx
+#USERPROG := obj/testcase/movsx
+USERPROG := obj/testcase/quick-sort
+
+
 ENTRY := $(USERPROG)
 
 entry: $(ENTRY)
