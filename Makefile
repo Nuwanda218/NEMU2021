@@ -59,8 +59,8 @@ clean: clean-cpp
 #USERPROG := obj/testcase/add-longlong
 #USERPROG := obj/testcase/gotbaha
 #USERPROG := obj/testcase/leap-year
-USERPROG := obj/testcase/matrix-mul-small
-
+#USERPROG := obj/testcase/matrix-mul-small
+USERPROG := obj/testcase/movsx
 ENTRY := $(USERPROG)
 
 entry: $(ENTRY)
