@@ -53,20 +53,20 @@ clean: clean-cpp
 
 ##### some convinient rules #####
 
-#USERPROG := obj/testcase/mov
-#USERPROG := obj/testcase/mov-c
-#USERPROG := obj/testcase/add
-#USERPROG := obj/testcase/add-longlong
-#USERPROG := obj/testcase/gotbaha
-#USERPROG := obj/testcase/leap-year
-#USERPROG := obj/testcase/matrix-mul-small
-#USERPROG := obj/testcase/movsx
-#USERPROG := obj/testcase/quick-sort
-#USERPROG := obj/testcase/sub-longlong
-#USERPROG := obj/testcase/bit
-#USERPROG := obj/testcase/mul-longlong
-#USERPROG := obj/testcase/matrix-mul
-#USERPROG := obj/testcase/sum
+USERPROG := obj/testcase/mov
+USERPROG := obj/testcase/mov-c
+USERPROG := obj/testcase/add
+USERPROG := obj/testcase/add-longlong
+USERPROG := obj/testcase/gotbaha
+USERPROG := obj/testcase/leap-year
+USERPROG := obj/testcase/matrix-mul-small
+USERPROG := obj/testcase/movsx
+USERPROG := obj/testcase/quick-sort
+USERPROG := obj/testcase/sub-longlong
+USERPROG := obj/testcase/bit
+USERPROG := obj/testcase/mul-longlong
+USERPROG := obj/testcase/matrix-mul
+USERPROG := obj/testcase/sum
 USERPROG := obj/testcase/max
 USERPROG := obj/testcase/pascal
 
