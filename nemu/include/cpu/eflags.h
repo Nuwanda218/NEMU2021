@@ -14,4 +14,10 @@ static inline bool check_cc_be(){
         return cpu.eflags.CF | cpu.eflags.ZF;
 }
 
+//ne条件的判断，返回非运算的ZF标志位即可
+static inline bool check_cc_ne(){
+        return !cpu.eflags.ZF;
+}
+
+
 #endif
