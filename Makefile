@@ -61,8 +61,11 @@ clean: clean-cpp
 #USERPROG := obj/testcase/leap-year
 #USERPROG := obj/testcase/matrix-mul-small
 #USERPROG := obj/testcase/movsx
-USERPROG := obj/testcase/quick-sort
-USERPROG := obj/testcase/sub-longlong
+#USERPROG := obj/testcase/quick-sort
+#USERPROG := obj/testcase/sub-longlong
+USERPROG := obj/testcase/bit
+
+
 
 ENTRY := $(USERPROG)
 
