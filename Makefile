@@ -76,6 +76,7 @@ USERPROG := obj/testcase/prime
 USERPROG := obj/testcase/fib
 USERPROG := obj/testcase/wanshu
 USERPROG := obj/testcase/switch
+USERPROG := obj/testcase/select-sort
 
 
 
