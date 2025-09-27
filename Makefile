@@ -80,6 +80,7 @@ USERPROG := obj/testcase/select-sort
 USERPROG := obj/testcase/bubble-sort
 USERPROG := obj/testcase/min3
 USERPROG := obj/testcase/to-lower-case
+USERPROG := obj/testcase/struct
 
 
 
