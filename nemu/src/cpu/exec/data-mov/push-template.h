@@ -3,19 +3,18 @@
 #define instr push
 
 static void do_execute() {
-    // Decrement ESP to allocate space for 4 bytes
-    REG(R_ESP) -= DATA_BYTE;
-
-    // Write operand value to the stack
-    swaddr_write(REG(R_ESP), DATA_BYTE, op_src->val);
-
-    // For disassembly output
-    print_asm_template1();
+	swaddr_write(cpu.esp - 4, 4, op_src->val);
+	cpu.esp -= 4;
+	print_asm_template1();
 }
 
-// helper for different operand sources (register/memory/immediate)
-make_instr_helper(r)     // push r32
-//make_instr_helper(rm)    // push r/m32
-//make_instr_helper(i)     // push imm32
+#if DATA_BYTE == 2 || DATA_BYTE == 4
+make_instr_helper(r)
+make_instr_helper(rm)
+#endif
+
+#if DATA_BYTE == 1
+make_instr_helper(si)
+#endif
 
 #include "cpu/exec/template-end.h"
