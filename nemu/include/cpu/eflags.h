@@ -45,5 +45,9 @@ static inline bool check_cc_a(){
         return !(cpu.eflags.ZF | cpu.eflags.CF);
 }
 
+// s条件的判断，检测SF标志位
+static inline bool check_cc_s() {
+    return cpu.eflags.SF;
+}
 
 #endif

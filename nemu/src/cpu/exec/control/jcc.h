@@ -9,6 +9,8 @@ make_helper(jg_b);
 make_helper(jne_b);
 make_helper(jge_b);
 make_helper(ja_b);
+make_helper(js_b);
+
 
 
 make_helper(je_l);
@@ -19,5 +21,7 @@ make_helper(jg_l);
 make_helper(jne_l);
 make_helper(jge_l);
 make_helper(ja_l);
+make_helper(js_l);
+
 
 #endif
