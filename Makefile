@@ -78,6 +78,7 @@ USERPROG := obj/testcase/wanshu
 USERPROG := obj/testcase/switch
 USERPROG := obj/testcase/select-sort
 USERPROG := obj/testcase/bubble-sort
+USERPROG := obj/testcase/min3
 
 
 
