@@ -82,6 +82,7 @@ USERPROG := obj/testcase/min3
 USERPROG := obj/testcase/to-lower-case
 USERPROG := obj/testcase/struct
 USERPROG := obj/testcase/string
+USERPROG := obj/testcase/hello-str
 
 
 
