@@ -75,6 +75,7 @@ USERPROG := obj/testcase/if-else
 USERPROG := obj/testcase/prime
 USERPROG := obj/testcase/fib
 USERPROG := obj/testcase/wanshu
+USERPROG := obj/testcase/switch
 
 
 
