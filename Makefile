@@ -79,6 +79,7 @@ USERPROG := obj/testcase/switch
 USERPROG := obj/testcase/select-sort
 USERPROG := obj/testcase/bubble-sort
 USERPROG := obj/testcase/min3
+USERPROG := obj/testcase/to-lower-case
 
 
 
