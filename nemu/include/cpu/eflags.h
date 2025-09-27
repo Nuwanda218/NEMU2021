@@ -4,12 +4,12 @@
 #include "common.h"
 
 void update_eflags_pf_zf_sf(uint32_t);
-//je条件的判断，检测ZF标志位
+//e条件的判断，检测ZF标志位
 static inline bool check_cc_e(){
         return cpu.eflags.ZF;
 }
 
-//jbe条件的判断，检测CF和ZF标志位
+//be条件的判断，检测CF和ZF标志位
 static inline bool check_cc_be(){
         return cpu.eflags.CF | cpu.eflags.ZF;
 }
@@ -40,6 +40,10 @@ static inline bool check_cc_ge(){
         return !(cpu.eflags.OF ^ cpu.eflags.SF);
 }
 
+//a条件的判断
+static inline bool check_cc_a(){
+        return !(cpu.eflags.ZF | cpu.eflags.CF);
+}
 
 
 #endif

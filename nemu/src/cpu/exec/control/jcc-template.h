@@ -22,4 +22,7 @@ make_jcc_helper(g)
 make_jcc_helper(ne)
 
 make_jcc_helper(ge)
+
+make_jcc_helper(a)
+
 #include "cpu/exec/template-end.h"
