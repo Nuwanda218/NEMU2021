@@ -50,4 +50,9 @@ static inline bool check_cc_s() {
     return cpu.eflags.SF;
 }
 
+// ns条件的判断，检测SF标志位是否为0
+static inline bool check_cc_ns() {
+    return !cpu.eflags.SF;
+}
+
 #endif
