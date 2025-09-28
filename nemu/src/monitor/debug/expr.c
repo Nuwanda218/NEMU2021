@@ -20,8 +20,8 @@ enum {
     REG,    // register
     DEREF,     // unary * (memory dereference)
     NOT,       // logical !
-    NEG       // unary minus
-
+    NEG,       // unary minus
+    ID
 	/* TODO: Add more token types */
 
 };
@@ -53,6 +53,8 @@ static struct rule {
     {">",       GT},                // greater than
     {"!",       NOT},               // logical NOT
 
+
+    {"[a-zA-Z_]{1,31}", ID},				// identifiers (variables)
     // Arithmetic operators
     {"\\+",     '+'},               // addition
     {"\\-",     '-'},               // subtraction (may later be converted to NEG)
@@ -149,7 +151,7 @@ static bool can_precede_unary(int type) {
            type == EQ || type == NEQ ||
            type == LT || type == LE ||
            type == GT || type == GE ||
-           type == NOTYPE; // 表达式开头
+           type == NOTYPE || type == ID;// 表达式开头
 }
 
 
@@ -301,7 +303,13 @@ static bool make_token(char *e) {
    					 	tokens[nr_token].str[substr_len] = '\0';
     					nr_token++;
    						break;
-
+                    case ID:
+                        // Variable
+                        tokens[nr_token].type = ID;
+                        strncpy(tokens[nr_token].str, substr_start, substr_len);
+                        tokens[nr_token].str[substr_len] = '\0';
+                        nr_token++;
+                        break;
     				default:
                         /* Defensive logging before panic to ease debugging */
                         printf("Unknown token type %d matched for \"%.*s\"\n", rules[i].token_type, substr_len, substr_start);

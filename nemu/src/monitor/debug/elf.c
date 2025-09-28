@@ -81,3 +81,33 @@ void load_elf_tables(int argc, char *argv[]) {
 	fclose(fp);
 }
 
+//sym是我们需要匹配的符号名称，success指针用于设置是否匹配成功
+uint32_t look_up_symtab(char *sym){
+    int i;
+    //遍历符号表逐个匹配符号
+    for(i=0;i < nr_symtab_entry;i++){
+        //逐个提取符号信息中的符号类别
+        uint8_t type = ELF32_ST_TYPE(symtab[i].st_info);
+        //当遇到类别为FUNC或者OBJECT时候匹配符号名
+        if((type == STT_FUNC || type == STT_OBJECT) && strcmp(strtab + symtab[i].st_name, sym) == 0){
+        //匹配成功后返回符号的地址
+        return symtab[i].st_value;
+        }
+    }
+    printf("No sym found");
+    return 0;
+}
+
+const char* find_fun_name(uint32_t eip) {
+	static const char not_found[] = "???";
+
+	int i;
+	for(i = 0; i < nr_symtab_entry; i ++) {
+		if(ELF32_ST_TYPE(symtab[i].st_info) == STT_FUNC && 
+				eip >= symtab[i].st_value && eip < symtab[i].st_value + symtab[i].st_size) {
+			return strtab + symtab[i].st_name;
+		}
+	}
+
+	return not_found;
+}
