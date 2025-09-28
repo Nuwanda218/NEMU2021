@@ -11,6 +11,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "memory/memory.h"  
+
+uint32_t look_up_symtab(char *);
+
 enum {
 	NOTYPE = 256, 
 	EQ, NEQ, // "==" (provided in the framework, can ignore for now)
@@ -367,6 +370,12 @@ static int32_t eval(int p, int q, bool *success) {
             if (!get_reg_val(tokens[p].str, &val)) { *success=false; return 0; }
             return (int32_t)val;
         }
+        if (tokens[p].type == ID) {
+            uint32_t val;
+            val = look_up_symtab(tokens[p].str);
+            if (val == 0) { *success=false; return 0; }
+            return (int32_t)val;
+        }
         *success = false;
         return 0;
     }
@@ -461,6 +470,11 @@ int32_t expr(char *e, bool *success) {
                 *success = false;
                 return 0;
             }
+            return (int32_t)val;
+        } else if (tokens[0].type == ID) {
+            uint32_t val;
+            val = look_up_symtab(tokens[0].str);
+            if (val == 0) { *success=false; return 0; }
             return (int32_t)val;
         } else {
             *success = false;
