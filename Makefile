@@ -10,7 +10,7 @@ LIB_COMMON_DIR := lib-common
 LIBC_INC_DIR := $(LIB_COMMON_DIR)/uclibc/include
 LIBC_LIB_DIR := $(LIB_COMMON_DIR)/uclibc/lib
 LIBC := $(LIBC_LIB_DIR)/libc.a
-#FLOAT := obj/$(LIB_COMMON_DIR)/FLOAT/FLOAT.a
+FLOAT := obj/$(LIB_COMMON_DIR)/FLOAT/FLOAT.a
 
 include config/Makefile.git
 include config/Makefile.build
@@ -83,6 +83,7 @@ USERPROG := obj/testcase/to-lower-case
 USERPROG := obj/testcase/struct
 USERPROG := obj/testcase/string
 USERPROG := obj/testcase/hello-str
+USERPROG := obj/testcase/integral
 
 
 

@@ -6,23 +6,23 @@
 typedef int FLOAT;
 
 static inline int F2int(FLOAT a) {
-	nemu_assert(0);
-	return 0;
+        //除以2^16，即右移16位，实现定点数转换回整形
+        return (a >> 16);
 }
-
+ 
 static inline FLOAT int2F(int a) {
-	nemu_assert(0);
-	return 0;
+        //乘2^16，即左移16位，实现整形转换定点数
+        return (a << 16);
 }
-
+ 
 static inline FLOAT F_mul_int(FLOAT a, int b) {
-	nemu_assert(0);
-	return 0;
+        //不需要调用int2F函数，因为两个定点数相乘后要除2^16，和函数转换时候的乘2^16消掉了
+        return a * b;
 }
-
+ 
 static inline FLOAT F_div_int(FLOAT a, int b) {
-	nemu_assert(0);
-	return 0;
+        //直接除就行
+        return a / b;
 }
 
 FLOAT f2F(float);

@@ -1,8 +1,20 @@
 #include "FLOAT.h"
+#include <stdint.h>
 
+//利用联合体结构，得到数值编码即可直接定位各个数位
+typedef union {
+        struct {
+                uint32_t m : 23; //尾数位
+                uint32_t e : 8;  //指数位
+                uint32_t s : 1;  //符号位
+        };
+        uint32_t val; //数值编码
+} Float;
+
+ 
 FLOAT F_mul_F(FLOAT a, FLOAT b) {
-	nemu_assert(0);
-	return 0;
+	int64_t scale = ((int64_t)a * (int64_t)b) >> 16;
+	return scale;
 }
 
 FLOAT F_div_F(FLOAT a, FLOAT b) {
@@ -24,10 +36,13 @@ FLOAT F_div_F(FLOAT a, FLOAT b) {
 	 * out another way to perform the division.
 	 */
 
-	nemu_assert(0);
-	return 0;
-}
+	 FLOAT quotient, remainder; // 存放商和余数
+    asm volatile("idiv %2":"=a"(quotient),"=d"(remainder):"r"(b),"a"(a<<16),"d"(a>>16));
+    return quotient;
 
+}
+#define __sign(x) ((x) & 0x80000000)
+ 
 FLOAT f2F(float a) {
 	/* You should figure out how to convert `a' into FLOAT without
 	 * introducing x87 floating point instructions. Else you can
@@ -38,14 +53,24 @@ FLOAT f2F(float a) {
 	 * stack. How do you retrieve it to another variable without
 	 * performing arithmetic operations on it directly?
 	 */
-
-	nemu_assert(0);
-	return 0;
+ 
+	Float f;
+	void *temp = &a;
+	f.val = *(uint32_t *)temp;
+	uint32_t m = f.m | (1 << 23);
+	int shift = 134 - (int)f.e;
+//	assert(shift <= 23 && shift >= -7);
+	if(shift < 0) {
+		m <<= (-shift);
+	}
+	else {
+		m >>= shift;
+	}
+	return (__sign(f.val) ? -m : m);
 }
 
 FLOAT Fabs(FLOAT a) {
-	nemu_assert(0);
-	return 0;
+	return __sign(a) ? -(a) : (a);
 }
 
 /* Functions below are already implemented */
