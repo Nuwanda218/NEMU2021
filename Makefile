@@ -85,7 +85,6 @@ USERPROG := obj/testcase/string
 USERPROG := obj/testcase/hello-str
 USERPROG := obj/testcase/integral
 USERPROG := obj/testcase/quadratic-eq
-USERPROG := obj/testcase/matrix-mul
 
 
 #ENTRY := $(USERPROG)
