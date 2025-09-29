@@ -55,4 +55,8 @@ static inline bool check_cc_ns() {
     return !cpu.eflags.SF;
 }
 
+static inline bool check_cc_b() {
+	return cpu.eflags.CF;
+}
+
 #endif

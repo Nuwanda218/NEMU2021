@@ -29,5 +29,7 @@ make_jcc_helper(s)
 
 make_jcc_helper(ns)
 
+make_jcc_helper(b)
+
 
 #include "cpu/exec/template-end.h"
