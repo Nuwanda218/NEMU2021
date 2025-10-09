@@ -1,6 +1,7 @@
 #include "device/port-io.h"
 #include "device/i8259.h"
 #include "monitor/monitor.h"
+#include <stdbool.h> 
 
 #define I8042_DATA_PORT 0x60
 #define KEYBOARD_IRQ 1

@@ -2,6 +2,7 @@
 #define __MMIO_H__
 
 #include "common.h"
+#include <stdbool.h> 
 
 typedef void(*mmio_callback_t)(hwaddr_t, size_t, bool);
 

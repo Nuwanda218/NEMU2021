@@ -1,6 +1,7 @@
 #include "common.h"
 #include "device/mmio.h"
 #include "misc.h"
+#include <stdbool.h> 
 
 #define MMIO_SPACE_MAX (256 * 1024)
 #define NR_MAP 8

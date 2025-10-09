@@ -2,6 +2,7 @@
 #define __PORT_IO_H__
 
 #include "common.h"
+#include <stdbool.h> 
 
 typedef void(*pio_callback_t)(ioaddr_t, size_t, bool);
 
