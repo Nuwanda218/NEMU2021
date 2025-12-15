@@ -3,7 +3,7 @@
  
 make_helper(leave){
     cpu.esp = cpu.ebp;  //栈顶指向栈基
-    cpu.ebp = swaddr_read(cpu.esp, 4);  //栈基回到存放好的上一级函数的栈基
+    cpu.ebp = swaddr_read(cpu.esp, 4, R_SS);  //栈基回到存放好的上一级函数的栈基
     cpu.esp += 4;  //栈顶去除存放栈基的部分内存
  
     print_asm("leave");

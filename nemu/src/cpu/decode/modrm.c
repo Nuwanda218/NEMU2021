@@ -109,8 +109,14 @@ int read_ModR_M(swaddr_t eip, Operand *rm, Operand *reg) {
 	}
 	else {
 		int instr_len = load_addr(eip, &m, rm);
-		rm->val = swaddr_read(rm->addr, rm->size);
+		if(rm->reg == R_EBP || rm->reg == R_ESP){
+        	rm->sreg = 2;
+    	}else{
+        	rm->sreg = 3;
+    	}
+		rm->val = swaddr_read(rm->addr, rm->size, rm->sreg);
 		return instr_len;
+
 	}
 }
 

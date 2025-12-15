@@ -97,7 +97,7 @@ static int cmd_x(char *args) {
 
     printf("0x%08x:", address);
     for (i = 0; i < len; i++) {
-        uint32_t val = swaddr_read(address, 4);
+        uint32_t val = swaddr_read(address, 4, R_DS);
         printf(" 0x%08x", val);
         address += 4;
     }
@@ -158,15 +158,15 @@ static int cmd_bt(char *args) {
 	uint32_t eip = cpu.eip;
 	int i = 0;
 	while(ebp != 0) {
-		sf.args[0] = swaddr_read(ebp + 8, 4);
-		sf.args[1] = swaddr_read(ebp + 12, 4);
-		sf.args[2] = swaddr_read(ebp + 16, 4);
-		sf.args[3] = swaddr_read(ebp + 20, 4);
+		sf.args[0] = swaddr_read(ebp + 8, 4, R_DS);
+		sf.args[1] = swaddr_read(ebp + 12, 4, R_DS);
+		sf.args[2] = swaddr_read(ebp + 16, 4, R_DS);
+		sf.args[3] = swaddr_read(ebp + 20, 4, R_DS);
 
 		printf("#%d 0x%08x in %s (0x%08x 0x%08x 0x%08x 0x%08x)\n", i, eip, find_fun_name(eip), sf.args[0], sf.args[1], sf.args[2], sf.args[3]);
 		i ++;
-		eip = swaddr_read(ebp + 4, 4);
-		ebp = swaddr_read(ebp, 4);
+		eip = swaddr_read(ebp + 4, 4, R_DS);
+		ebp = swaddr_read(ebp, 4, R_DS);
 	}
 	return 0;
 }

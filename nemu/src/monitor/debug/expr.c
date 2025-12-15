@@ -390,7 +390,7 @@ static int32_t eval(int p, int q, bool *success) {
     if (!*success) return 0;
     switch (tokens[p].type) {
         case NEG: return -val;
-        case DEREF: return swaddr_read((uint32_t)val, 4);
+        case DEREF: return swaddr_read((uint32_t)val, 4, R_DS);
         case NOT: return !val;
     }
 }

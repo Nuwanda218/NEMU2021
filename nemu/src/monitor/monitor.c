@@ -77,27 +77,32 @@ static void load_entry() {
 
 void restart() {
 	/* Perform some initialization to restart a program */
+	
 #ifdef USE_RAMDISK
 	/* Read the file with name `argv[1]' into ramdisk. */
 	init_ramdisk();
 #endif
-
+ 
 	/* Read the entry code into memory. */
 	load_entry();
-	
-	/* Initialize control registers */
-    cpu.cr0.val = 0;      // PE = 0，进入实模式
-	//printf("CR0 = 0x%x\n", cpu.cr0.val);
-
-
-
+ 
 	/* Set the initial instruction pointer. */
 	cpu.eip = ENTRY_START;
-    
-	/* Initialize EFLAGS (bit 1 is always 1 in x86) */
-    cpu.eflags.val = 0x2;
-   
-
+ 
+	int cs_idx = 1;
+	cpu.seg_regs[cs_idx].val = 0x0000;
+	// 根据实验指导，初始化 CS 寄存器的隐藏部分 (Descriptor Cache)
+	// 将 base 初始化为 0, limit 初始化为 0xffffffff
+	// 这样在保护模式下，取指地址就是 0 + eip，并且可以访问整个 4GB 地址空间
+	cpu.seg_regs[cs_idx].base = 0x00000000;
+	cpu.seg_regs[cs_idx].limit = 0xffffffff;
+ 
+	/* Initialize EFLAGS. */
+    cpu.eflags.val = 0x00000002;  //通过初始化val来初始化eflags的标志位
+ 
+	//Initialize cr0
+	cpu.cr0.val = 0x0;
+ 
 	/* Initialize DRAM. */
-	init_ddr3();
+	init_ddr3();        
 }

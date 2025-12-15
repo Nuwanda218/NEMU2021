@@ -10,8 +10,13 @@ enum { R_EAX, R_ECX, R_EDX, R_EBX, R_ESP, R_EBP, R_ESI, R_EDI };
 enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
 
-enum { R_ES, R_CS, R_SS, R_DS};//段寄存器
-
+enum {
+    R_ES,  // 编译器自动赋值为 0
+    R_CS,  // 编译器自动赋值为 1
+    R_SS,  // 编译器自动赋值为 2
+    R_DS,  // 编译器自动赋值为 3
+    NR_SEG_REGS  // 编译器自动赋值为 4
+};
 /* TODO: Re-organize the `CPU_state' structure to match the register
  * encoding scheme in i386 instruction format. For example, if we
  * access cpu.gpr[3]._16, we will get the `bx' register; if we access
@@ -20,17 +25,6 @@ enum { R_ES, R_CS, R_SS, R_DS};//段寄存器
  */
 
  
- 
-
-/*段寄存器结构*/
-
-typedef struct {
-    uint16_t selector;    //选择符
-    uint16_t pad;         //对齐使用
-    uint32_t base;        //基地址
-    uint32_t limit;       //限界
-    uint32_t flags;       //访问权限
-} S_reg;
 
 typedef struct {
      union{
@@ -73,21 +67,18 @@ typedef struct {
 
 	/*GDTR 结构*/
     struct {
+		uint16_t limit;
 		uint32_t base;
-		uint32_t limit;
-	} gdtr;
-
-	union{
-		struct{
-			S_reg sreg[4];
-		};
-		struct{
-			S_reg ES,CS,SS,DS;
-		};
+	}gdtr;	
  
-	};
-       
-	CR0 cr0;
+    CR0 cr0;
+ 
+	struct {
+    	//SegSelector seg;
+    	uint16_t val;
+		uint32_t base;  // 隐藏部分 (Cache)：段基地址
+    	uint32_t limit; // 隐藏部分 (Cache)：段界限
+	} seg_regs[NR_SEG_REGS];
 
 
 } CPU_state;
