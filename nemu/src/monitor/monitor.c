@@ -84,10 +84,18 @@ void restart() {
 
 	/* Read the entry code into memory. */
 	load_entry();
+	
+	/* Initialize control registers */
+    cpu.cr0.val = 0;      // PE = 0，进入实模式
+
 
 	/* Set the initial instruction pointer. */
 	cpu.eip = ENTRY_START;
-        cpu.eflags.val = 0x2;
+    
+	/* Initialize EFLAGS (bit 1 is always 1 in x86) */
+    cpu.eflags.val = 0x2;
+    printf("CR0 = 0x%x\n", cpu.cr0.val);
+
 
 	/* Initialize DRAM. */
 	init_ddr3();

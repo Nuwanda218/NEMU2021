@@ -2,10 +2,15 @@
 #define __REG_H__
 
 #include "common.h"
+//为了使用CR0
+#include "../../../lib-common/x86-inc/mmu.h"
+#include "../../../lib-common/x86-inc/cpu.h"
 
 enum { R_EAX, R_ECX, R_EDX, R_EBX, R_ESP, R_EBP, R_ESI, R_EDI };
 enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
+
+enum { R_ES, R_CS, R_SS, R_DS};//段寄存器
 
 /* TODO: Re-organize the `CPU_state' structure to match the register
  * encoding scheme in i386 instruction format. For example, if we
@@ -13,6 +18,19 @@ enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
  * cpu.gpr[1]._8[1], we will get the 'ch' register. Hint: Use `union'.
  * For more details about the register encoding scheme, see i386 manual.
  */
+
+ 
+ 
+
+/*段寄存器结构*/
+
+typedef struct {
+    uint16_t selector;    //选择符
+    uint16_t pad;         //对齐使用
+    uint32_t base;        //基地址
+    uint32_t limit;       //限界
+    uint32_t flags;       //访问权限
+} S_reg;
 
 typedef struct {
      union{
@@ -52,6 +70,25 @@ typedef struct {
 		};
 		uint32_t val;
 	} eflags;
+
+	/*GDTR 结构*/
+    struct {
+		uint32_t base;
+		uint32_t limit;
+	} gdtr;
+
+	union{
+		struct{
+			S_reg sreg[4];
+		};
+		struct{
+			S_reg ES,CS,SS,DS;
+		};
+ 
+	};
+       
+	CR0 cr0;
+
 
 } CPU_state;
 
