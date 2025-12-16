@@ -72,6 +72,8 @@ typedef struct {
 	}gdtr;	
  
     CR0 cr0;
+
+	CR3 cr3;
  
 	struct {
     	//SegSelector seg;

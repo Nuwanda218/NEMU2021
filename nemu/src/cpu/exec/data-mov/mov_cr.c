@@ -31,6 +31,8 @@ int mov_r2cr (swaddr_t eip) {
         switch (cr_idx) {
         case 0 :  cpu.cr0.val = cr_val ;
                   break;
+        case 3 :  cpu.cr3.val = cr_val ;
+                  break;
         default : panic("mov_r2cr: CR%d is not supported.", cr_idx); 
                   break;
     }
